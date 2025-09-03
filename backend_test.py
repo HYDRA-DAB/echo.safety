@@ -1,0 +1,357 @@
+import requests
+import sys
+import json
+from datetime import datetime
+import uuid
+
+class CampusSafetyAPITester:
+    def __init__(self, base_url="https://campus-safety.preview.emergentagent.com/api"):
+        self.base_url = base_url
+        self.token = None
+        self.user_data = None
+        self.tests_run = 0
+        self.tests_passed = 0
+        self.test_user_email = f"test_user_{datetime.now().strftime('%H%M%S')}@srmist.edu.in"
+        self.test_roll_number = f"RA{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+    def log_test(self, name, success, details=""):
+        """Log test results"""
+        self.tests_run += 1
+        if success:
+            self.tests_passed += 1
+            print(f"✅ {name} - PASSED")
+        else:
+            print(f"❌ {name} - FAILED: {details}")
+
+    def make_request(self, method, endpoint, data=None, auth_required=False):
+        """Make HTTP request with proper headers"""
+        url = f"{self.base_url}/{endpoint}"
+        headers = {'Content-Type': 'application/json'}
+        
+        if auth_required and self.token:
+            headers['Authorization'] = f'Bearer {self.token}'
+        
+        try:
+            if method == 'GET':
+                response = requests.get(url, headers=headers, timeout=10)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=headers, timeout=10)
+            
+            return response
+        except Exception as e:
+            print(f"Request error: {str(e)}")
+            return None
+
+    def test_root_endpoint(self):
+        """Test the root API endpoint"""
+        print("\n🔍 Testing Root Endpoint...")
+        response = self.make_request('GET', '')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = "Campus Crime Alert" in data.get("message", "")
+                self.log_test("Root Endpoint", success, 
+                            f"Status: {response.status_code}, Message: {data.get('message', 'No message')}")
+                return success
+            except:
+                self.log_test("Root Endpoint", False, f"Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Root Endpoint", False, f"Status: {status}")
+            return False
+
+    def test_user_signup(self):
+        """Test user registration"""
+        print("\n🔍 Testing User Signup...")
+        
+        signup_data = {
+            "name": "Test User",
+            "email": self.test_user_email,
+            "phone": "9876543210",
+            "srm_roll_number": self.test_roll_number,
+            "password": "TestPass123!"
+        }
+        
+        response = self.make_request('POST', 'auth/signup', signup_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                if 'access_token' in data and 'user' in data:
+                    self.token = data['access_token']
+                    self.user_data = data['user']
+                    self.log_test("User Signup", True, f"User ID: {self.user_data.get('id')}")
+                    return True
+                else:
+                    self.log_test("User Signup", False, "Missing token or user data in response")
+                    return False
+            except:
+                self.log_test("User Signup", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            error_msg = ""
+            if response:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('detail', 'Unknown error')
+                except:
+                    error_msg = response.text
+            self.log_test("User Signup", False, f"Status: {status}, Error: {error_msg}")
+            return False
+
+    def test_user_login_email(self):
+        """Test user login with email"""
+        print("\n🔍 Testing User Login (Email)...")
+        
+        login_data = {
+            "email_or_roll": self.test_user_email,
+            "password": "TestPass123!"
+        }
+        
+        response = self.make_request('POST', 'auth/login', login_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'access_token' in data and 'user' in data
+                self.log_test("User Login (Email)", success)
+                return success
+            except:
+                self.log_test("User Login (Email)", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("User Login (Email)", False, f"Status: {status}")
+            return False
+
+    def test_user_login_roll(self):
+        """Test user login with SRM roll number"""
+        print("\n🔍 Testing User Login (Roll Number)...")
+        
+        login_data = {
+            "email_or_roll": self.test_roll_number,
+            "password": "TestPass123!"
+        }
+        
+        response = self.make_request('POST', 'auth/login', login_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'access_token' in data and 'user' in data
+                self.log_test("User Login (Roll Number)", success)
+                return success
+            except:
+                self.log_test("User Login (Roll Number)", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("User Login (Roll Number)", False, f"Status: {status}")
+            return False
+
+    def test_crime_report(self):
+        """Test crime reporting"""
+        print("\n🔍 Testing Crime Report...")
+        
+        if not self.token:
+            self.log_test("Crime Report", False, "No authentication token")
+            return False
+        
+        crime_data = {
+            "title": "Test Theft Report",
+            "description": "Testing theft reporting functionality",
+            "crime_type": "theft",
+            "location": {
+                "lat": 12.8230,
+                "lng": 80.0444,
+                "address": "SRM KTR Campus, Academic Block A"
+            },
+            "severity": "medium",
+            "is_anonymous": False
+        }
+        
+        response = self.make_request('POST', 'crimes/report', crime_data, auth_required=True)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'id' in data and data.get('title') == crime_data['title']
+                self.log_test("Crime Report", success, f"Crime ID: {data.get('id')}")
+                return success
+            except:
+                self.log_test("Crime Report", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Crime Report", False, f"Status: {status}")
+            return False
+
+    def test_get_crimes(self):
+        """Test getting all crimes"""
+        print("\n🔍 Testing Get Crimes...")
+        
+        response = self.make_request('GET', 'crimes')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = isinstance(data, list)
+                self.log_test("Get Crimes", success, f"Found {len(data)} crimes")
+                return success
+            except:
+                self.log_test("Get Crimes", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Get Crimes", False, f"Status: {status}")
+            return False
+
+    def test_get_map_data(self):
+        """Test getting map data"""
+        print("\n🔍 Testing Get Map Data...")
+        
+        response = self.make_request('GET', 'crimes/map-data')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'crimes' in data and isinstance(data['crimes'], list)
+                self.log_test("Get Map Data", success, f"Found {len(data.get('crimes', []))} map entries")
+                return success
+            except:
+                self.log_test("Get Map Data", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Get Map Data", False, f"Status: {status}")
+            return False
+
+    def test_sos_alert(self):
+        """Test SOS alert creation"""
+        print("\n🔍 Testing SOS Alert...")
+        
+        if not self.token:
+            self.log_test("SOS Alert", False, "No authentication token")
+            return False
+        
+        sos_data = {
+            "location": {
+                "lat": 12.8230,
+                "lng": 80.0444,
+                "address": "SRM KTR Campus Emergency"
+            },
+            "emergency_type": "security"
+        }
+        
+        response = self.make_request('POST', 'sos/alert', sos_data, auth_required=True)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'id' in data and data.get('emergency_type') == 'security'
+                self.log_test("SOS Alert", success, f"SOS ID: {data.get('id')}")
+                return success
+            except:
+                self.log_test("SOS Alert", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("SOS Alert", False, f"Status: {status}")
+            return False
+
+    def test_get_sos_alerts(self):
+        """Test getting SOS alerts"""
+        print("\n🔍 Testing Get SOS Alerts...")
+        
+        response = self.make_request('GET', 'sos/alerts')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = isinstance(data, list)
+                self.log_test("Get SOS Alerts", success, f"Found {len(data)} SOS alerts")
+                return success
+            except:
+                self.log_test("Get SOS Alerts", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Get SOS Alerts", False, f"Status: {status}")
+            return False
+
+    def test_ai_predictions(self):
+        """Test AI predictions endpoint"""
+        print("\n🔍 Testing AI Predictions...")
+        
+        response = self.make_request('GET', 'ai/predictions')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'predictions' in data and isinstance(data['predictions'], list)
+                predictions_count = len(data.get('predictions', []))
+                self.log_test("AI Predictions", success, f"Found {predictions_count} predictions")
+                
+                # Verify prediction structure
+                if success and predictions_count > 0:
+                    first_prediction = data['predictions'][0]
+                    required_fields = ['id', 'prediction_text', 'confidence_level', 'crime_type', 'location_area']
+                    has_all_fields = all(field in first_prediction for field in required_fields)
+                    if not has_all_fields:
+                        print("⚠️  Warning: Prediction missing required fields")
+                
+                return success
+            except:
+                self.log_test("AI Predictions", False, "Invalid JSON response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("AI Predictions", False, f"Status: {status}")
+            return False
+
+    def run_all_tests(self):
+        """Run all API tests"""
+        print("🚀 Starting Campus Safety API Tests...")
+        print(f"📍 Base URL: {self.base_url}")
+        print("=" * 60)
+        
+        # Test sequence
+        tests = [
+            self.test_root_endpoint,
+            self.test_user_signup,
+            self.test_user_login_email,
+            self.test_user_login_roll,
+            self.test_crime_report,
+            self.test_get_crimes,
+            self.test_get_map_data,
+            self.test_sos_alert,
+            self.test_get_sos_alerts,
+            self.test_ai_predictions
+        ]
+        
+        for test in tests:
+            try:
+                test()
+            except Exception as e:
+                print(f"❌ {test.__name__} - EXCEPTION: {str(e)}")
+        
+        # Print summary
+        print("\n" + "=" * 60)
+        print(f"📊 API Test Results: {self.tests_passed}/{self.tests_run} tests passed")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 All API tests passed!")
+            return 0
+        else:
+            print(f"⚠️  {self.tests_run - self.tests_passed} tests failed")
+            return 1
+
+def main():
+    tester = CampusSafetyAPITester()
+    return tester.run_all_tests()
+
+if __name__ == "__main__":
+    sys.exit(main())
