@@ -129,6 +129,9 @@ function App() {
               } 
             />
           </Routes>
+          
+          {/* Global Voice Chatbot Widget */}
+          <VoiceChatbotWidget />
         </BrowserRouter>
         <Toaster />
       </div>
