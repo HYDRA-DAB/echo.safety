@@ -5,6 +5,7 @@ import { MapPin, Shield, AlertTriangle, Users, Brain, TrendingUp, Zap, Phone, Ch
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import VoiceChatbotWidget from './VoiceChatbotWidget';
 
 const LandingPage = () => {
   const { user } = useAuth();
