@@ -201,30 +201,6 @@ const CrimeMap = () => {
     }
   };
 
-  // Handle crime marker click
-  const handleCrimeClick = (crime) => {
-    setSelectedCrime(crime);
-    // Scroll to incident in list
-    if (incidentListRef.current) {
-      const element = document.getElementById(`incident-${crime.id}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  };
-
-  // Handle incident list item click
-  const handleIncidentClick = (crime) => {
-    // Center map on crime location
-    setViewState(prev => ({
-      ...prev,
-      longitude: crime.location.lng,
-      latitude: crime.location.lat,
-      zoom: Math.max(prev.zoom, 15)
-    }));
-    setSelectedCrime(crime);
-  };
-
   // Handle hover events
   const handleCrimeHover = (crime) => {
     setHoveredCrime(crime);
