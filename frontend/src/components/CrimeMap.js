@@ -100,19 +100,12 @@ const CrimeMap = () => {
            lat <= bounds.getNorth();
   }, []);
 
-  // Filter crimes by current map bounds
+  // Show all crimes within map bounds (no filtering)
   const visibleCrimes = useMemo(() => {
     return crimes.filter(crime => {
-      const matchesFilter = filter === 'all' || crime.crime_type === filter;
-      const withinBounds = isWithinBounds(crime.location.lat, crime.location.lng);
-      return matchesFilter && withinBounds;
+      return isWithinBounds(crime.location.lat, crime.location.lng);
     });
-  }, [crimes, filter, viewState, isWithinBounds]);
-
-  // All filtered crimes (for sidebar stats)
-  const filteredCrimes = useMemo(() => {
-    return filter === 'all' ? crimes : crimes.filter(crime => crime.crime_type === filter);
-  }, [crimes, filter]);
+  }, [crimes, viewState, isWithinBounds]);
 
   const checkLocationPermission = () => {
     if (navigator.geolocation) {
