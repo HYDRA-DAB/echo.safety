@@ -302,15 +302,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          <Card className="feature-card p-6">
-            <div className="flex items-center">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white">Safety Tips</h3>
-                <p className="text-gray-400 text-sm">Prevention guide</p>
-              </div>
-              <FileText className="w-8 h-8 text-yellow-500" />
-            </div>
-          </Card>
+
         </div>
 
         {/* Statistics Cards */}
