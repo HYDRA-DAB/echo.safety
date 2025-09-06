@@ -145,9 +145,13 @@ const SignIn = () => {
                 </Label>
               </div>
               
-              <Link to="/forgot-password" className="text-sm text-red-400 hover:text-red-300">
+              <button
+                type="button"
+                onClick={() => setShowForgotPasswordModal(true)}
+                className="text-sm text-red-400 hover:text-red-300 hover:underline transition-colors"
+              >
                 Forgot password?
-              </Link>
+              </button>
             </div>
 
             <Button
