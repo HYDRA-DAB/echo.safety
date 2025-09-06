@@ -91,7 +91,7 @@ class LocationData(BaseModel):
     lat: float
     lng: float
     address: str
-    source: str  # "current", "search", "map"
+    source: Optional[str] = "unknown"  # "current", "search", "map", "unknown"
 
 class CrimeReport(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
