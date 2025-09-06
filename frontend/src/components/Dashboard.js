@@ -834,7 +834,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Reports */}
           <Card className="feature-card p-6">
             <div className="flex items-center justify-between mb-4">
@@ -854,18 +854,18 @@ const Dashboard = () => {
                     <Badge className={getCrimeColor(crime.crime_type)}>
                       {crime.crime_type.replace('_', ' ').toUpperCase()}
                     </Badge>
-                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-300">
+                    <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
                       {crime.severity.toUpperCase()}
                     </Badge>
                   </div>
                   
-                  <h4 className="text-white text-base font-semibold mb-2">{crime.title}</h4>
+                  <h4 className="text-white font-medium mb-2 line-clamp-2">{crime.title}</h4>
+                  <p className="text-gray-400 text-sm mb-3 line-clamp-2">{crime.description}</p>
                   
-                  {crime.description && (
-                    <div className="mb-3">
-                      <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words">
-                        {crime.description}
-                      </p>
+                  {crime.crime_type === 'women_safety' && (
+                    <div className="flex items-center text-xs text-pink-400 mb-2">
+                      <span className="mr-1">👩</span>
+                      Safety alert - Stay vigilant
                     </div>
                   )}
                   
@@ -890,6 +890,11 @@ const Dashboard = () => {
               )}
             </div>
           </Card>
+
+          {/* Crime Statistics Chart */}
+          <div className="lg:col-span-2">
+            <CrimeStatisticsChart crimes={crimes.all || []} />
+          </div>
         </div>
 
         {/* Emergency Helplines */}
