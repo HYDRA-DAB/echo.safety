@@ -444,7 +444,7 @@ const Dashboard = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="crime_type" className="text-white">Crime Type *</Label>
+                    <Label htmlFor="crime_type" className="text-yellow-400 font-medium">Crime Type *</Label>
                     <Select value={reportForm.crime_type} onValueChange={(value) => setReportForm({...reportForm, crime_type: value})}>
                       <SelectTrigger className="input-field">
                         <SelectValue placeholder="Select crime type" />
@@ -459,7 +459,7 @@ const Dashboard = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="severity" className="text-white">Priority Level *</Label>
+                  <Label htmlFor="severity" className="text-yellow-400 font-medium">Priority Level *</Label>
                   <Select value={reportForm.severity} onValueChange={(value) => setReportForm({...reportForm, severity: value})}>
                     <SelectTrigger className="input-field">
                       <SelectValue placeholder="Select priority level" />
