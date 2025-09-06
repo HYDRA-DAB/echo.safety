@@ -56,7 +56,6 @@ const CrimeMap = () => {
   });
   
   const [crimes, setCrimes] = useState([]);
-  const [selectedCrime, setSelectedCrime] = useState(null);
   const [hoveredCrime, setHoveredCrime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
