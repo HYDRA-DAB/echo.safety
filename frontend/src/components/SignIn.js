@@ -145,13 +145,18 @@ const SignIn = () => {
                 </Label>
               </div>
               
-              <button
-                type="button"
-                onClick={() => setShowForgotPasswordModal(true)}
-                className="text-sm text-red-400 hover:text-red-300 hover:underline transition-colors"
-              >
-                Forgot password?
-              </button>
+              <div className="flex flex-col items-end space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPasswordModal(true)}
+                  className="text-sm text-red-400 hover:text-red-300 hover:underline transition-colors"
+                >
+                  Forgot password?
+                </button>
+                <Link to="/forgot-password" className="text-xs text-gray-500 hover:text-gray-400">
+                  (or use full page)
+                </Link>
+              </div>
             </div>
 
             <Button
