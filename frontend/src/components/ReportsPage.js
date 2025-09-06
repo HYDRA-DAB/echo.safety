@@ -13,7 +13,8 @@ import {
   Eye,
   Search,
   LogOut,
-  FileText
+  FileText,
+  User
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
