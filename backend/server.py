@@ -6,13 +6,14 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
 import bcrypt
+import re
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -36,7 +37,11 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Models
+# Enhanced Models
+class TrustedContact(BaseModel):
+    name: str
+    phone: str
+
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
@@ -44,6 +49,7 @@ class User(BaseModel):
     phone: str
     srm_roll_number: str
     password_hash: str
+    trusted_contacts: List[TrustedContact] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
@@ -52,6 +58,21 @@ class UserCreate(BaseModel):
     phone: str
     srm_roll_number: str
     password: str
+    trusted_contact_1_name: Optional[str] = ""
+    trusted_contact_1_phone: Optional[str] = ""
+    trusted_contact_2_name: Optional[str] = ""
+    trusted_contact_2_phone: Optional[str] = ""
+
+    @validator('phone', 'trusted_contact_1_phone', 'trusted_contact_2_phone')
+    def validate_phone(cls, v):
+        if v and v.strip():  # Only validate if phone number is provided
+            # Remove all non-digit characters
+            cleaned = re.sub(r'\D', '', v)
+            # Check if it's a valid Indian mobile number (10 digits starting with 6-9)
+            if not re.match(r'^[6-9]\d{9}$', cleaned):
+                raise ValueError('Phone number must be a valid 10-digit Indian mobile number')
+            return cleaned
+        return v
 
 class UserLogin(BaseModel):
     email_or_roll: str  # Can be email or SRM roll number
@@ -63,7 +84,14 @@ class UserResponse(BaseModel):
     email: str
     phone: str
     srm_roll_number: str
+    trusted_contacts: List[TrustedContact] = []
     created_at: datetime
+
+class LocationData(BaseModel):
+    lat: float
+    lng: float
+    address: str
+    source: str  # "current", "search", "map"
 
 class CrimeReport(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -71,7 +99,7 @@ class CrimeReport(BaseModel):
     title: str
     description: str
     crime_type: str  # "theft", "women_safety", "drugs"
-    location: dict  # {"lat": float, "lng": float, "address": str}
+    location: LocationData
     severity: str  # "low", "medium", "high"
     status: str = "pending"  # "pending", "investigating", "resolved"
     is_anonymous: bool = False
@@ -81,20 +109,33 @@ class CrimeReportCreate(BaseModel):
     title: str
     description: str
     crime_type: str
-    location: dict
+    location: LocationData
     severity: str
     is_anonymous: bool = False
+
+class CrimeReportResponse(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    description: str
+    crime_type: str
+    location: LocationData
+    severity: str
+    status: str
+    is_anonymous: bool
+    created_at: datetime
 
 class SOSAlert(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
-    location: dict  # {"lat": float, "lng": float, "address": str}
+    location: LocationData
     emergency_type: str = "general"  # "general", "medical", "security", "fire"
     status: str = "active"  # "active", "resolved"
+    trusted_contacts_notified: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class SOSCreate(BaseModel):
-    location: dict
+    location: LocationData
     emergency_type: str = "general"
 
 class AITrendPrediction(BaseModel):
@@ -150,11 +191,31 @@ async def signup(user_data: UserCreate):
     if existing_user:
         raise HTTPException(status_code=400, detail="User with this email or roll number already exists")
     
+    # Process trusted contacts
+    trusted_contacts = []
+    if user_data.trusted_contact_1_phone and user_data.trusted_contact_1_name:
+        trusted_contacts.append(TrustedContact(
+            name=user_data.trusted_contact_1_name.strip(),
+            phone=user_data.trusted_contact_1_phone
+        ))
+    
+    if user_data.trusted_contact_2_phone and user_data.trusted_contact_2_name:
+        trusted_contacts.append(TrustedContact(
+            name=user_data.trusted_contact_2_name.strip(),
+            phone=user_data.trusted_contact_2_phone
+        ))
+    
     # Create new user
     hashed_password = get_password_hash(user_data.password)
-    user_dict = user_data.dict()
-    user_dict.pop("password")
-    user_dict["password_hash"] = hashed_password
+    user_dict = {
+        "name": user_data.name.strip(),
+        "email": user_data.email.strip().lower(),
+        "phone": user_data.phone,
+        "srm_roll_number": user_data.srm_roll_number.strip(),
+        "password_hash": hashed_password,
+        "trusted_contacts": [contact.dict() for contact in trusted_contacts],
+        "created_at": datetime.now(timezone.utc)
+    }
     
     user = User(**user_dict)
     await db.users.insert_one(user.dict())
@@ -191,23 +252,30 @@ async def login(login_data: UserLogin):
     }
 
 # Crime reporting routes
-@api_router.post("/crimes/report", response_model=CrimeReport)
+@api_router.post("/crimes/report", response_model=CrimeReportResponse)
 async def report_crime(crime_data: CrimeReportCreate, current_user: User = Depends(get_current_user)):
     crime_dict = crime_data.dict()
     crime_dict["user_id"] = current_user.id
     crime = CrimeReport(**crime_dict)
     
     await db.crime_reports.insert_one(crime.dict())
-    return crime
+    return CrimeReportResponse(**crime.dict())
 
-@api_router.get("/crimes", response_model=List[CrimeReport])
+@api_router.get("/crimes", response_model=List[CrimeReportResponse])
 async def get_crimes():
-    crimes = await db.crime_reports.find().to_list(1000)
-    return [CrimeReport(**crime) for crime in crimes]
+    # Sort by created_at descending (latest first)
+    crimes = await db.crime_reports.find().sort("created_at", -1).to_list(1000)
+    return [CrimeReportResponse(**crime) for crime in crimes]
+
+@api_router.get("/crimes/recent", response_model=List[CrimeReportResponse])
+async def get_recent_crimes(limit: int = 5):
+    # Get recent crimes for dashboard
+    crimes = await db.crime_reports.find().sort("created_at", -1).limit(limit).to_list(limit)
+    return [CrimeReportResponse(**crime) for crime in crimes]
 
 @api_router.get("/crimes/map-data")
 async def get_map_data():
-    crimes = await db.crime_reports.find().to_list(1000)
+    crimes = await db.crime_reports.find().sort("created_at", -1).to_list(1000)
     
     # Transform data for map visualization
     map_data = []
@@ -218,6 +286,7 @@ async def get_map_data():
             "location": crime["location"],
             "severity": crime["severity"],
             "title": crime["title"],
+            "description": crime["description"],
             "created_at": crime["created_at"].isoformat() if isinstance(crime["created_at"], datetime) else crime["created_at"]
         })
     
@@ -226,8 +295,12 @@ async def get_map_data():
 # SOS routes
 @api_router.post("/sos/alert", response_model=SOSAlert)
 async def create_sos_alert(sos_data: SOSCreate, current_user: User = Depends(get_current_user)):
+    # Get trusted contacts for notification
+    trusted_contacts_phones = [contact["phone"] for contact in current_user.trusted_contacts]
+    
     sos_dict = sos_data.dict()
     sos_dict["user_id"] = current_user.id
+    sos_dict["trusted_contacts_notified"] = trusted_contacts_phones
     sos_alert = SOSAlert(**sos_dict)
     
     await db.sos_alerts.insert_one(sos_alert.dict())
@@ -237,6 +310,11 @@ async def create_sos_alert(sos_data: SOSCreate, current_user: User = Depends(get
 async def get_sos_alerts():
     alerts = await db.sos_alerts.find().sort("created_at", -1).to_list(100)
     return [SOSAlert(**alert) for alert in alerts]
+
+# Get user's trusted contacts
+@api_router.get("/user/trusted-contacts")
+async def get_trusted_contacts(current_user: User = Depends(get_current_user)):
+    return {"trusted_contacts": current_user.trusted_contacts}
 
 # AI Predictions routes
 @api_router.get("/ai/predictions")
