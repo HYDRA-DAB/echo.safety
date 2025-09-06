@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import Map, { Marker, Popup, Source, Layer } from 'react-map-gl';
+import Map, { Marker, Popup, Source, Layer } from 'react-map-gl/mapbox';
 import axios from 'axios';
 import { 
   Shield, 
