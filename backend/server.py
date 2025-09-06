@@ -277,7 +277,7 @@ async def get_ai_predictions():
 # Basic route from original code
 @api_router.get("/")
 async def root():
-    return {"message": "Campus Crime Alert & Prevention API - SRM KTR"}
+    return {"message": "Echo - Campus Crime Alert & Prevention API - SRM KTR"}
 
 # Include the router in the main app
 app.include_router(api_router)
