@@ -45,10 +45,13 @@ const Dashboard = () => {
     title: '',
     description: '',
     crime_type: '',
-    location: { lat: 12.8233, lng: 80.0418, address: 'SRM KTR Campus' },
+    location: null,
     severity: '',
     is_anonymous: false
   });
+  const [locationMethod, setLocationMethod] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [addressSearch, setAddressSearch] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
