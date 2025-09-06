@@ -5,6 +5,8 @@ import axios from "axios";
 import LandingPage from "./components/LandingPage";
 import SignIn from "./components/SignIn";
 import SignUp from "./components/SignUp";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 import CrimeMap from "./components/CrimeMap";
 import Dashboard from "./components/Dashboard";
 import SafetyTips from "./components/SafetyTips";
