@@ -361,6 +361,9 @@ const LandingPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Voice Chatbot Widget - Only on Landing Page */}
+      <VoiceChatbotWidget />
     </div>
   );
 };
