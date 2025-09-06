@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const LandingPage = () => {
   const { user } = useAuth();
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const [showSupportDialog, setShowSupportDialog] = useState(false);
 
   const features = [
     {
