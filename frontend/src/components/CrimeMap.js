@@ -577,20 +577,16 @@ const CrimeMap = () => {
               <Layer {...heatmapLayer} />
             </Source>
 
-            {/* Crime Markers with Fixed Ripple Effect */}
+            {/* Crime Markers with Fixed Ripple Effect - Display Only */}
             {visibleCrimes.map((crime) => (
               <Marker
                 key={crime.id}
                 longitude={crime.location.lng}
                 latitude={crime.location.lat}
                 anchor="center"
-                onClick={(e) => {
-                  e.originalEvent.stopPropagation();
-                  handleCrimeClick(crime);
-                }}
               >
                 <div 
-                  className="relative cursor-pointer"
+                  className="relative"
                   onMouseEnter={() => handleCrimeHover(crime)}
                   onMouseLeave={handleCrimeLeave}
                 >
@@ -611,7 +607,7 @@ const CrimeMap = () => {
                   <div 
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-lg relative z-10 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ${
                       hoveredCrime?.id === crime.id ? 'scale-110' : 'scale-100'
-                    } ${selectedCrime?.id === crime.id ? 'ring-2 ring-white' : ''}`}
+                    }`}
                     style={{
                       backgroundColor: getCrimeColor(crime.crime_type),
                       boxShadow: `0 0 20px ${getCrimeColor(crime.crime_type)}60`,
