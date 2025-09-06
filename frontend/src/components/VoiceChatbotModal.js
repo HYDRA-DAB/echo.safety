@@ -112,9 +112,11 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         ref={modalRef}
-        className="bg-gray-900 border-gray-700 text-white max-w-md w-full mx-4 max-h-[95vh] overflow-hidden flex flex-col sm:max-w-lg"
+        className="bg-gray-900 border-gray-700 text-white max-w-md w-full mx-4 max-h-[95vh] overflow-hidden flex flex-col sm:max-w-lg md:max-w-xl lg:max-w-2xl"
         aria-labelledby="voice-chatbot-title"
         aria-describedby="voice-chatbot-description"
+        onPointerDownOutside={onClose}
+        onEscapeKeyDown={onClose}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700 flex-shrink-0">
