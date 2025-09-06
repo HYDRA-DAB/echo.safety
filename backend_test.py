@@ -505,33 +505,386 @@ class CampusSafetyAPITester:
             return False
 
     def test_ai_predictions(self):
-        """Test AI predictions endpoint"""
-        print("\n🔍 Testing AI Predictions...")
+        """Test enhanced AI predictions endpoint with real NewsAPI and LLM integration"""
+        print("\n🔍 Testing Enhanced AI Predictions...")
         
         response = self.make_request('GET', 'ai/predictions')
         
         if response and response.status_code == 200:
             try:
                 data = response.json()
-                success = 'predictions' in data and isinstance(data['predictions'], list)
-                predictions_count = len(data.get('predictions', []))
-                self.log_test("AI Predictions", success, f"Found {predictions_count} predictions")
                 
-                # Verify prediction structure
-                if success and predictions_count > 0:
-                    first_prediction = data['predictions'][0]
-                    required_fields = ['id', 'prediction_text', 'confidence_level', 'crime_type', 'location_area']
-                    has_all_fields = all(field in first_prediction for field in required_fields)
-                    if not has_all_fields:
-                        print("⚠️  Warning: Prediction missing required fields")
+                # Check main structure
+                required_main_fields = ['predictions', 'trend_analysis', 'safety_tips', 'news_articles_analyzed', 'last_updated']
+                has_main_structure = all(field in data for field in required_main_fields)
+                
+                if not has_main_structure:
+                    self.log_test("Enhanced AI Predictions", False, f"Missing main fields: {[f for f in required_main_fields if f not in data]}")
+                    return False
+                
+                # Check predictions structure
+                predictions = data.get('predictions', [])
+                predictions_count = len(predictions)
+                
+                if predictions_count > 0:
+                    first_prediction = predictions[0]
+                    required_pred_fields = ['id', 'prediction_text', 'confidence_level', 'crime_type', 'location_area', 'risk_factors', 'preventive_measures', 'data_sources', 'valid_until']
+                    has_pred_fields = all(field in first_prediction for field in required_pred_fields)
+                    
+                    if not has_pred_fields:
+                        missing_fields = [f for f in required_pred_fields if f not in first_prediction]
+                        self.log_test("Enhanced AI Predictions", False, f"Prediction missing fields: {missing_fields}")
+                        return False
+                
+                # Check trend analysis structure
+                trend_analysis = data.get('trend_analysis', {})
+                required_trend_fields = ['trend_type', 'crime_categories', 'time_period', 'key_insights', 'statistical_summary']
+                has_trend_fields = all(field in trend_analysis for field in required_trend_fields)
+                
+                if not has_trend_fields:
+                    missing_trend_fields = [f for f in required_trend_fields if f not in trend_analysis]
+                    self.log_test("Enhanced AI Predictions", False, f"Trend analysis missing fields: {missing_trend_fields}")
+                    return False
+                
+                # Check safety tips
+                safety_tips = data.get('safety_tips', [])
+                has_safety_tips = isinstance(safety_tips, list) and len(safety_tips) > 0
+                
+                # Check news articles analyzed count
+                news_count = data.get('news_articles_analyzed', 0)
+                
+                success = has_main_structure and has_pred_fields and has_trend_fields and has_safety_tips
+                
+                details = f"Predictions: {predictions_count}, News analyzed: {news_count}, Safety tips: {len(safety_tips)}, Trend: {trend_analysis.get('trend_type', 'unknown')}"
+                self.log_test("Enhanced AI Predictions", success, details)
                 
                 return success
-            except:
-                self.log_test("AI Predictions", False, "Invalid JSON response")
+                
+            except Exception as e:
+                self.log_test("Enhanced AI Predictions", False, f"JSON parsing error: {str(e)}")
                 return False
         else:
             status = response.status_code if response else "No response"
-            self.log_test("AI Predictions", False, f"Status: {status}")
+            error_msg = ""
+            if response:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('detail', 'Unknown error')
+                except:
+                    error_msg = response.text[:200]
+            self.log_test("Enhanced AI Predictions", False, f"Status: {status}, Error: {error_msg}")
+            return False
+
+    def test_ai_news_articles(self):
+        """Test news articles endpoint"""
+        print("\n🔍 Testing AI News Articles...")
+        
+        response = self.make_request('GET', 'ai/news-articles?limit=5')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check main structure
+                required_fields = ['articles', 'count', 'last_updated']
+                has_structure = all(field in data for field in required_fields)
+                
+                if not has_structure:
+                    self.log_test("AI News Articles", False, f"Missing fields: {[f for f in required_fields if f not in data]}")
+                    return False
+                
+                articles = data.get('articles', [])
+                count = data.get('count', 0)
+                
+                # Verify count matches articles length
+                count_matches = len(articles) == count
+                
+                # Check article structure if articles exist
+                if articles:
+                    first_article = articles[0]
+                    required_article_fields = ['title', 'url', 'published_at', 'source_name', 'crime_score']
+                    has_article_fields = all(field in first_article for field in required_article_fields)
+                    
+                    if not has_article_fields:
+                        missing_fields = [f for f in required_article_fields if f not in first_article]
+                        self.log_test("AI News Articles", False, f"Article missing fields: {missing_fields}")
+                        return False
+                
+                success = has_structure and count_matches
+                self.log_test("AI News Articles", success, f"Found {count} articles, Last updated: {data.get('last_updated', 'N/A')}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("AI News Articles", False, f"JSON parsing error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("AI News Articles", False, f"Status: {status}")
+            return False
+
+    def test_ai_refresh_analysis_without_auth(self):
+        """Test refresh analysis endpoint without authentication (should fail)"""
+        print("\n🔍 Testing AI Refresh Analysis (No Auth)...")
+        
+        response = self.make_request('POST', 'ai/refresh-analysis')
+        
+        # Should return 401 or 403 for missing authentication
+        if response and response.status_code in [401, 403]:
+            self.log_test("AI Refresh Analysis (No Auth)", True, f"Correctly rejected unauthorized request: {response.status_code}")
+            return True
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("AI Refresh Analysis (No Auth)", False, f"Expected 401/403, got: {status}")
+            return False
+
+    def test_ai_refresh_analysis_with_auth(self):
+        """Test refresh analysis endpoint with authentication"""
+        print("\n🔍 Testing AI Refresh Analysis (With Auth)...")
+        
+        if not self.token:
+            self.log_test("AI Refresh Analysis (With Auth)", False, "No authentication token")
+            return False
+        
+        response = self.make_request('POST', 'ai/refresh-analysis', auth_required=True)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check response structure
+                required_fields = ['message', 'analysis', 'refreshed_at']
+                has_structure = all(field in data for field in required_fields)
+                
+                if not has_structure:
+                    self.log_test("AI Refresh Analysis (With Auth)", False, f"Missing fields: {[f for f in required_fields if f not in data]}")
+                    return False
+                
+                # Check that analysis has the expected structure
+                analysis = data.get('analysis', {})
+                analysis_fields = ['predictions', 'trend_analysis', 'safety_tips']
+                has_analysis_structure = all(field in analysis for field in analysis_fields)
+                
+                success = has_structure and has_analysis_structure
+                self.log_test("AI Refresh Analysis (With Auth)", success, f"Refreshed at: {data.get('refreshed_at', 'N/A')}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("AI Refresh Analysis (With Auth)", False, f"JSON parsing error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            error_msg = ""
+            if response:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('detail', 'Unknown error')
+                except:
+                    error_msg = response.text[:200]
+            self.log_test("AI Refresh Analysis (With Auth)", False, f"Status: {status}, Error: {error_msg}")
+            return False
+
+    def test_ai_predictions_fallback_behavior(self):
+        """Test AI predictions fallback behavior when APIs might be unavailable"""
+        print("\n🔍 Testing AI Predictions Fallback Behavior...")
+        
+        # Make multiple requests to test consistency and fallback mechanisms
+        responses = []
+        for i in range(2):
+            response = self.make_request('GET', 'ai/predictions')
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    responses.append(data)
+                except:
+                    pass
+            
+            # Small delay between requests
+            import time
+            time.sleep(1)
+        
+        if len(responses) < 2:
+            self.log_test("AI Predictions Fallback", False, "Could not get multiple responses for comparison")
+            return False
+        
+        # Check that both responses have valid structure (indicating fallback works)
+        first_response = responses[0]
+        second_response = responses[1]
+        
+        # Both should have predictions
+        has_predictions_1 = 'predictions' in first_response and len(first_response['predictions']) > 0
+        has_predictions_2 = 'predictions' in second_response and len(second_response['predictions']) > 0
+        
+        # Check if responses are consistent (caching working) or different (fresh data)
+        predictions_count_1 = len(first_response.get('predictions', []))
+        predictions_count_2 = len(second_response.get('predictions', []))
+        
+        success = has_predictions_1 and has_predictions_2
+        
+        details = f"Response 1: {predictions_count_1} predictions, Response 2: {predictions_count_2} predictions"
+        if success:
+            # Check if we got mock data (news_articles_analyzed = 0) or real data
+            news_count_1 = first_response.get('news_articles_analyzed', 0)
+            news_count_2 = second_response.get('news_articles_analyzed', 0)
+            
+            if news_count_1 == 0 and news_count_2 == 0:
+                details += " (Using fallback/mock data)"
+            else:
+                details += f" (Real data: {max(news_count_1, news_count_2)} articles)"
+        
+        self.log_test("AI Predictions Fallback", success, details)
+        return success
+
+    def test_ai_crime_filtering_accuracy(self):
+        """Test the crime content filtering by checking prediction relevance"""
+        print("\n🔍 Testing AI Crime Filtering Accuracy...")
+        
+        response = self.make_request('GET', 'ai/predictions')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                predictions = data.get('predictions', [])
+                
+                if not predictions:
+                    self.log_test("AI Crime Filtering", False, "No predictions to analyze")
+                    return False
+                
+                # Check if predictions contain crime-related content
+                crime_related_count = 0
+                total_predictions = len(predictions)
+                
+                crime_keywords = ['crime', 'theft', 'robbery', 'assault', 'safety', 'security', 'risk', 'danger', 'incident', 'violence']
+                
+                for prediction in predictions:
+                    prediction_text = prediction.get('prediction_text', '').lower()
+                    crime_type = prediction.get('crime_type', '')
+                    
+                    # Check if prediction contains crime-related keywords or has valid crime type
+                    has_crime_keywords = any(keyword in prediction_text for keyword in crime_keywords)
+                    has_valid_crime_type = crime_type in ['violent', 'property', 'drug', 'assault', 'cyber', 'general']
+                    
+                    if has_crime_keywords or has_valid_crime_type:
+                        crime_related_count += 1
+                
+                # At least 80% of predictions should be crime-related
+                accuracy_threshold = 0.8
+                accuracy = crime_related_count / total_predictions if total_predictions > 0 else 0
+                success = accuracy >= accuracy_threshold
+                
+                self.log_test("AI Crime Filtering", success, 
+                            f"Crime relevance: {crime_related_count}/{total_predictions} ({accuracy:.1%})")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("AI Crime Filtering", False, f"Analysis error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("AI Crime Filtering", False, f"Status: {status}")
+            return False
+
+    def test_ai_response_format_validation(self):
+        """Test that AI responses match the expected enhanced models"""
+        print("\n🔍 Testing AI Response Format Validation...")
+        
+        response = self.make_request('GET', 'ai/predictions')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Validate main response structure
+                main_validation_errors = []
+                
+                # Check predictions array
+                predictions = data.get('predictions', [])
+                if not isinstance(predictions, list):
+                    main_validation_errors.append("predictions should be a list")
+                
+                # Check trend_analysis object
+                trend_analysis = data.get('trend_analysis', {})
+                if not isinstance(trend_analysis, dict):
+                    main_validation_errors.append("trend_analysis should be an object")
+                
+                # Check safety_tips array
+                safety_tips = data.get('safety_tips', [])
+                if not isinstance(safety_tips, list):
+                    main_validation_errors.append("safety_tips should be a list")
+                
+                # Check news_articles_analyzed number
+                news_count = data.get('news_articles_analyzed')
+                if not isinstance(news_count, int):
+                    main_validation_errors.append("news_articles_analyzed should be an integer")
+                
+                # Check last_updated datetime string
+                last_updated = data.get('last_updated')
+                if not isinstance(last_updated, str):
+                    main_validation_errors.append("last_updated should be a datetime string")
+                
+                # Validate individual prediction structure
+                prediction_validation_errors = []
+                if predictions:
+                    for i, pred in enumerate(predictions[:3]):  # Check first 3 predictions
+                        required_pred_fields = {
+                            'id': str,
+                            'prediction_text': str,
+                            'confidence_level': str,
+                            'crime_type': str,
+                            'location_area': str,
+                            'risk_factors': list,
+                            'preventive_measures': list,
+                            'data_sources': list,
+                            'valid_until': str,
+                            'created_at': str
+                        }
+                        
+                        for field, expected_type in required_pred_fields.items():
+                            if field not in pred:
+                                prediction_validation_errors.append(f"Prediction {i}: missing {field}")
+                            elif not isinstance(pred[field], expected_type):
+                                prediction_validation_errors.append(f"Prediction {i}: {field} should be {expected_type.__name__}")
+                
+                # Validate trend analysis structure
+                trend_validation_errors = []
+                required_trend_fields = {
+                    'trend_type': str,
+                    'crime_categories': list,
+                    'time_period': str,
+                    'key_insights': list,
+                    'statistical_summary': dict
+                }
+                
+                for field, expected_type in required_trend_fields.items():
+                    if field not in trend_analysis:
+                        trend_validation_errors.append(f"Trend analysis: missing {field}")
+                    elif not isinstance(trend_analysis[field], expected_type):
+                        trend_validation_errors.append(f"Trend analysis: {field} should be {expected_type.__name__}")
+                
+                # Compile all errors
+                all_errors = main_validation_errors + prediction_validation_errors + trend_validation_errors
+                
+                success = len(all_errors) == 0
+                
+                if success:
+                    self.log_test("AI Response Format Validation", True, 
+                                f"All fields valid. Predictions: {len(predictions)}, Safety tips: {len(safety_tips)}")
+                else:
+                    error_summary = "; ".join(all_errors[:3])  # Show first 3 errors
+                    if len(all_errors) > 3:
+                        error_summary += f" (and {len(all_errors) - 3} more)"
+                    self.log_test("AI Response Format Validation", False, error_summary)
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("AI Response Format Validation", False, f"Validation error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("AI Response Format Validation", False, f"Status: {status}")
             return False
 
     def run_all_tests(self):
