@@ -204,8 +204,8 @@ class CampusSafetyAPITester:
             return False
 
     def test_crime_report(self):
-        """Test crime reporting"""
-        print("\n🔍 Testing Crime Report...")
+        """Test crime reporting with enhanced location data"""
+        print("\n🔍 Testing Crime Report with Location Data...")
         
         if not self.token:
             self.log_test("Crime Report", False, "No authentication token")
@@ -213,12 +213,13 @@ class CampusSafetyAPITester:
         
         crime_data = {
             "title": "Test Theft Report",
-            "description": "Testing theft reporting functionality",
+            "description": "Testing theft reporting functionality with enhanced location",
             "crime_type": "theft",
             "location": {
                 "lat": 12.8230,
                 "lng": 80.0444,
-                "address": "SRM KTR Campus, Academic Block A"
+                "address": "SRM KTR Campus, Academic Block A",
+                "source": "current"
             },
             "severity": "medium",
             "is_anonymous": False
@@ -229,15 +230,19 @@ class CampusSafetyAPITester:
         if response and response.status_code == 200:
             try:
                 data = response.json()
-                success = 'id' in data and data.get('title') == crime_data['title']
-                self.log_test("Crime Report", success, f"Crime ID: {data.get('id')}")
+                location = data.get('location', {})
+                success = ('id' in data and 
+                          data.get('title') == crime_data['title'] and
+                          location.get('source') == 'current' and
+                          'lat' in location and 'lng' in location)
+                self.log_test("Crime Report with Location", success, f"Crime ID: {data.get('id')}")
                 return success
-            except:
-                self.log_test("Crime Report", False, "Invalid JSON response")
+            except Exception as e:
+                self.log_test("Crime Report with Location", False, f"JSON error: {str(e)}")
                 return False
         else:
             status = response.status_code if response else "No response"
-            self.log_test("Crime Report", False, f"Status: {status}")
+            self.log_test("Crime Report with Location", False, f"Status: {status}")
             return False
 
     def test_get_crimes(self):
