@@ -714,6 +714,150 @@ async def refresh_ai_analysis(background_tasks: BackgroundTasks, current_user: U
             detail=f"Failed to refresh AI analysis: {str(e)}"
         )
 
+# Voice Chatbot Routes
+@api_router.post("/voice", response_model=VoiceChatResponse)
+async def voice_chat(chat_message: VoiceChatMessage):
+    """Interactive voice chatbot powered by Emergent LLM (ChatGPT)"""
+    
+    try:
+        # Generate session ID if not provided
+        if not chat_message.session_id:
+            chat_message.session_id = f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+        
+        # System prompt for Voice chatbot
+        system_prompt = """You are Voice, the Echo beginner guide for campus safety. You help users with signup, signin, crime reporting, and safety steps.
+
+IMPORTANT RULES:
+1. Ask ONE question at a time only
+2. Never perform actions - only provide guidance
+3. Keep responses concise and helpful
+4. Always end serious safety responses with: "If life is in danger, call police now. I can't call for you, but our site offers one-click helpline access."
+
+CONVERSATION FLOW:
+- Start by asking what happened (if not provided)
+- Then ask about priority level (if not provided)
+- High priority → Show serious safety actions
+- Low/Medium → Show reporting guidance
+- Offer signin help if needed
+
+Your role is to guide users through Echo's safety features step by step."""
+
+        # Determine conversation stage and generate appropriate response
+        stage = chat_message.conversation_stage or "initial"
+        
+        # Create context for the LLM based on current stage and user input
+        context_messages = []
+        
+        if stage == "initial":
+            context_messages.append(f"User message: {chat_message.message}")
+            context_messages.append("This is the first interaction. Ask what happened or what type of incident they need help with.")
+        
+        elif stage == "incident_type":
+            context_messages.append(f"User reported incident type: {chat_message.incident_type}")
+            context_messages.append("Now ask about the priority level: Low, Medium, or High.")
+        
+        elif stage == "priority":
+            context_messages.append(f"Incident: {chat_message.incident_type}, Priority: {chat_message.priority_level}")
+            if chat_message.priority_level == "high":
+                context_messages.append("This is HIGH priority. Provide serious safety actions guidance immediately and end with the emergency disclaimer.")
+            else:
+                context_messages.append("This is Low/Medium priority. Provide reporting guidance and steps.")
+        
+        elif stage == "actions":
+            context_messages.append(f"User needs help with: {chat_message.message}")
+            context_messages.append("Provide specific guidance for their situation.")
+        
+        elif stage == "signin_help":
+            context_messages.append(f"User asking about signin: {chat_message.message}")
+            context_messages.append("Provide signin/signup guidance.")
+        
+        # Combine context into a single prompt
+        full_context = "\n".join(context_messages)
+        
+        # Initialize LLM chat
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=chat_message.session_id,
+            system_message=system_prompt
+        ).with_model("openai", "gpt-4o-mini")
+        
+        # Send message to ChatGPT
+        user_message = UserMessage(text=full_context)
+        llm_response = await chat.send_message(user_message)
+        
+        # Determine next stage and quick replies based on current stage
+        quick_replies = []
+        buttons = []
+        next_stage = stage
+        show_serious = False
+        
+        if stage == "initial":
+            quick_replies = ["Theft", "Harassment", "Drug Abuse", "Other"]
+            next_stage = "incident_type"
+        
+        elif stage == "incident_type":
+            quick_replies = ["Low", "Medium", "High"]
+            next_stage = "priority"
+        
+        elif stage == "priority":
+            if chat_message.priority_level == "high":
+                show_serious = True
+                buttons = [
+                    {"text": "Open Report Page", "action": "open_report"},
+                    {"text": "Open Sign In", "action": "open_signin"},
+                    {"text": "Call Help", "action": "call_help"}
+                ]
+                next_stage = "actions"
+            else:
+                buttons = [
+                    {"text": "Open Report Page", "action": "open_report"},
+                    {"text": "Open Sign In", "action": "open_signin"}
+                ]
+                quick_replies = ["Sign Up Guide", "Sign In Guide", "No Thanks"]
+                next_stage = "signin_help"
+        
+        elif stage == "actions" or stage == "signin_help":
+            # Final stage - provide options to restart or get more help
+            buttons = [
+                {"text": "Start Over", "action": "restart"},
+                {"text": "Get More Help", "action": "help"}
+            ]
+        
+        # Log intent for metrics (non-PII)
+        intent_log = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "incident_type": chat_message.incident_type,
+            "priority_level": chat_message.priority_level,
+            "conversation_stage": next_stage,
+            "session_id": chat_message.session_id
+        }
+        logging.info(f"Voice chatbot intent: {intent_log}")
+        
+        return VoiceChatResponse(
+            response=llm_response,
+            quick_replies=quick_replies,
+            buttons=buttons,
+            conversation_stage=next_stage,
+            show_serious_actions=show_serious,
+            session_id=chat_message.session_id
+        )
+        
+    except Exception as e:
+        logging.error(f"Error in voice chatbot: {str(e)}")
+        
+        # Fallback response
+        return VoiceChatResponse(
+            response="I'm having trouble right now. For immediate help, please contact campus security or use our SOS feature. If life is in danger, call police now. I can't call for you, but our site offers one-click helpline access.",
+            quick_replies=["Try Again", "Get Help"],
+            buttons=[
+                {"text": "Open Sign In", "action": "open_signin"},
+                {"text": "Call Help", "action": "call_help"}
+            ],
+            conversation_stage="error",
+            show_serious_actions=True,
+            session_id=chat_message.session_id or f"error_{str(uuid.uuid4())[:8]}"
+        )
+
 # Basic route from original code
 @api_router.get("/")
 async def root():
