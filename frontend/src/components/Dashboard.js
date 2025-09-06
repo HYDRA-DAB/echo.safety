@@ -479,17 +479,6 @@ const Dashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                  <Select value={reportForm.severity} onValueChange={(value) => setReportForm({...reportForm, severity: value})}>
-                    <SelectTrigger className="input-field">
-                      <SelectValue placeholder="Select priority level" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="low">Low Priority</SelectItem>
-                      <SelectItem value="medium">Medium Priority</SelectItem>
-                      <SelectItem value="high">High Priority</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 {/* Crime Location Section */}
                 <div className="border-t border-gray-700 pt-6">
