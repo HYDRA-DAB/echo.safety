@@ -147,7 +147,7 @@ const CrimeMap = () => {
         async (position) => {
           const { latitude, longitude } = position.coords;
           try {
-            const token = localStorage.getToken('token');
+            const token = localStorage.getItem('token');
             
             // Create SOS alert with location
             const locationData = {
