@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
-import { MapPin, Shield, AlertTriangle, Users, Brain, TrendingUp, Zap, Phone, ChevronRight, Eye, Bell, MessageSquare, BookOpen } from 'lucide-react';
+import { MapPin, Shield, AlertTriangle, Users, Brain, TrendingUp, Zap, Phone, ChevronRight, Eye, Bell, MessageSquare, BookOpen, Mail, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const LandingPage = () => {
   const { user } = useAuth();
