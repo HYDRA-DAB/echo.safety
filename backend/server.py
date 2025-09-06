@@ -296,7 +296,7 @@ async def get_map_data():
 @api_router.post("/sos/alert", response_model=SOSAlert)
 async def create_sos_alert(sos_data: SOSCreate, current_user: User = Depends(get_current_user)):
     # Get trusted contacts for notification
-    trusted_contacts_phones = [contact["phone"] for contact in current_user.trusted_contacts]
+    trusted_contacts_phones = [contact.phone for contact in current_user.trusted_contacts]
     
     sos_dict = sos_data.dict()
     sos_dict["user_id"] = current_user.id
