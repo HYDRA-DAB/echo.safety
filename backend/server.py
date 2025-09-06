@@ -154,6 +154,51 @@ class AITrendPrediction(BaseModel):
     valid_until: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Enhanced AI Models
+class NewsArticleStored(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    content: Optional[str] = None
+    url: str
+    url_to_image: Optional[str] = None
+    published_at: datetime
+    source_name: str
+    source_id: Optional[str] = None
+    author: Optional[str] = None
+    crime_score: float
+    crime_analysis: Dict[str, Any]
+    locations: List[str] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EnhancedAIPrediction(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    prediction_text: str
+    confidence_level: str  # "low", "medium", "high"
+    crime_type: str
+    location_area: str
+    risk_factors: List[str] = []
+    preventive_measures: List[str] = []
+    data_sources: List[str] = []
+    valid_until: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CrimeTrendAnalysis(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    trend_type: str  # "increasing", "decreasing", "stable"
+    crime_categories: List[str]
+    time_period: str
+    key_insights: List[str]
+    statistical_summary: Dict[str, Any]
+    analysis_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AIAnalysisResponse(BaseModel):
+    predictions: List[EnhancedAIPrediction]
+    trend_analysis: CrimeTrendAnalysis
+    safety_tips: List[str]
+    news_articles_analyzed: int
+    last_updated: datetime
+
 # Authentication helpers
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
