@@ -430,10 +430,13 @@ class CampusSafetyAPITester:
         tests = [
             self.test_root_endpoint,
             self.test_user_signup,
+            self.test_user_signup_with_trusted_contacts,
             self.test_user_login_email,
             self.test_user_login_roll,
+            self.test_get_trusted_contacts,
             self.test_crime_report,
             self.test_get_crimes,
+            self.test_get_recent_crimes,
             self.test_get_map_data,
             self.test_sos_alert,
             self.test_get_sos_alerts,
