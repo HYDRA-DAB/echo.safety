@@ -452,14 +452,11 @@ const CrimeMap = () => {
                     <div
                       key={crime.id}
                       id={`incident-${crime.id}`}
-                      className={`p-3 mb-2 rounded-lg border cursor-pointer transition-all duration-200 ${
-                        selectedCrime?.id === crime.id
-                          ? 'bg-gray-700 border-red-500'
-                          : hoveredCrime?.id === crime.id
+                      className={`p-3 mb-2 rounded-lg border cursor-default transition-all duration-200 ${
+                        hoveredCrime?.id === crime.id
                           ? 'bg-gray-700/50 border-gray-600'
-                          : 'bg-gray-800/50 border-gray-700 hover:bg-gray-700/30 hover:border-gray-600'
+                          : 'bg-gray-800/50 border-gray-700'
                       }`}
-                      onClick={() => handleIncidentClick(crime)}
                       onMouseEnter={() => handleCrimeHover(crime)}
                       onMouseLeave={handleCrimeLeave}
                     >
