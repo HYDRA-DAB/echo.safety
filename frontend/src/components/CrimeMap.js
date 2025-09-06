@@ -17,7 +17,9 @@ import {
   Navigation,
   MessageCircle,
   List,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -55,16 +57,62 @@ const CrimeMap = () => {
   
   const [crimes, setCrimes] = useState([]);
   const [selectedCrime, setSelectedCrime] = useState(null);
+  const [hoveredCrime, setHoveredCrime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [locationPermission, setLocationPermission] = useState('unknown');
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [showIncidentList, setShowIncidentList] = useState(true);
+
+  // Ref for incident list to enable scrolling
+  const incidentListRef = useRef(null);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     fetchCrimes();
     checkLocationPermission();
   }, []);
+
+  // Convert UTC to IST
+  const formatToIST = (utcDateString) => {
+    const date = new Date(utcDateString);
+    return date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Check if point is within map bounds
+  const isWithinBounds = useCallback((lat, lng) => {
+    if (!mapRef.current) return true;
+    
+    const map = mapRef.current.getMap();
+    const bounds = map.getBounds();
+    
+    return lng >= bounds.getWest() && 
+           lng <= bounds.getEast() && 
+           lat >= bounds.getSouth() && 
+           lat <= bounds.getNorth();
+  }, []);
+
+  // Filter crimes by current map bounds
+  const visibleCrimes = useMemo(() => {
+    return crimes.filter(crime => {
+      const matchesFilter = filter === 'all' || crime.crime_type === filter;
+      const withinBounds = isWithinBounds(crime.location.lat, crime.location.lng);
+      return matchesFilter && withinBounds;
+    });
+  }, [crimes, filter, viewState, isWithinBounds]);
+
+  // All filtered crimes (for sidebar stats)
+  const filteredCrimes = useMemo(() => {
+    return filter === 'all' ? crimes : crimes.filter(crime => crime.crime_type === filter);
+  }, [crimes, filter]);
 
   const checkLocationPermission = () => {
     if (navigator.geolocation) {
@@ -100,7 +148,9 @@ const CrimeMap = () => {
 
   const fetchCrimes = async () => {
     try {
-      const response = await axios.get(`${API}/crimes/map-data`);
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.get(`${API}/crimes/map-data`, { headers });
       setCrimes(response.data.crimes || []);
     } catch (error) {
       console.error('Error fetching crimes:', error);
@@ -110,22 +160,92 @@ const CrimeMap = () => {
     }
   };
 
-  const filteredCrimes = useMemo(() => {
-    if (filter === 'all') return crimes;
-    return crimes.filter(crime => crime.type === filter);
-  }, [crimes, filter]);
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleSOS = async () => {
+    if (!currentLocation) {
+      toast.error('Location access required for SOS');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const sosData = {
+        location: {
+          lat: currentLocation.latitude,
+          lng: currentLocation.longitude,
+          address: "Emergency Location",
+          source: "current"
+        },
+        emergency_type: "general"
+      };
+
+      await axios.post(`${API}/sos/alert`, sosData, { headers });
+      
+      // WhatsApp message for trusted contacts
+      const message = encodeURIComponent(
+        `🚨 EMERGENCY ALERT 🚨\n\nThis is an automated SOS alert from Echo Campus Safety.\n\nUser: ${user?.name}\nLocation: https://maps.google.com/maps?q=${currentLocation.latitude},${currentLocation.longitude}\nTime: ${new Date().toLocaleString()}\n\nPlease respond immediately or contact emergency services if needed.`
+      );
+      
+      // This will open WhatsApp to send the message
+      window.open(`https://wa.me/?text=${message}`, '_blank');
+      
+      toast.success('SOS alert sent to trusted contacts');
+    } catch (error) {
+      console.error('Error sending SOS:', error);
+      toast.error('Failed to send SOS alert');
+    }
+  };
+
+  // Handle crime marker click
+  const handleCrimeClick = (crime) => {
+    setSelectedCrime(crime);
+    // Scroll to incident in list
+    if (incidentListRef.current) {
+      const element = document.getElementById(`incident-${crime.id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
+
+  // Handle incident list item click
+  const handleIncidentClick = (crime) => {
+    // Center map on crime location
+    setViewState(prev => ({
+      ...prev,
+      longitude: crime.location.lng,
+      latitude: crime.location.lat,
+      zoom: Math.max(prev.zoom, 15)
+    }));
+    setSelectedCrime(crime);
+  };
+
+  // Handle hover events
+  const handleCrimeHover = (crime) => {
+    setHoveredCrime(crime);
+  };
+
+  const handleCrimeLeave = () => {
+    setHoveredCrime(null);
+  };
 
   const getCrimeColor = (type) => {
-    switch (type) {
-      case 'theft': return '#dc2626'; // Red
-      case 'women_safety': return '#ec4899'; // Pink
-      case 'drugs': return '#3b82f6'; // Blue
-      default: return '#6b7280'; // Gray
+    switch(type) {
+      case 'theft': return '#dc2626';
+      case 'women_safety': return '#ec4899';
+      case 'drugs': return '#3b82f6';
+      default: return '#6b7280';
     }
   };
 
   const getCrimeIcon = (type) => {
-    switch (type) {
+    switch(type) {
       case 'theft': return '🔒';
       case 'women_safety': return '👩';
       case 'drugs': return '💊';
@@ -133,92 +253,53 @@ const CrimeMap = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  const handleSOS = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            const token = localStorage.getItem('token');
-            
-            // Create SOS alert with location
-            const locationData = {
-              lat: latitude,
-              lng: longitude,
-              address: 'Current Location',
-              source: 'current'
-            };
-
-            await axios.post(`${API}/sos/alert`, {
-              location: locationData,
-              emergency_type: 'general'
-            }, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            // Get user's trusted contacts
-            const contactsResponse = await axios.get(`${API}/user/trusted-contacts`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            const trustedContacts = contactsResponse.data.trusted_contacts || [];
-            
-            // WhatsApp SOS Integration with trusted contacts
-            const sosMessage = `🚨 EMERGENCY ALERT - ECHO 🚨\n\nUser: ${user?.name}\nSRM Roll: ${user?.srm_roll_number}\nTime: ${new Date().toLocaleString()}\nLocation: https://maps.google.com/maps?q=${latitude},${longitude}\n\nImmediate assistance required at SRM KTR Campus!`;
-            
-            if (trustedContacts.length > 0) {
-              // Send to each trusted contact
-              trustedContacts.forEach((contact, index) => {
-                setTimeout(() => {
-                  const contactMessage = `${sosMessage}\n\nSent to: ${contact.name}`;
-                  const whatsappUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(contactMessage)}`;
-                  window.open(whatsappUrl, '_blank');
-                }, index * 1000); // Delay each message by 1 second
-              });
-              toast.success(`SOS Alert sent to ${trustedContacts.length} trusted contact(s)!`);
-            } else {
-              // Fallback to general WhatsApp sharing
-              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(sosMessage)}`;
-              window.open(whatsappUrl, '_blank');
-              toast.success(`SOS Alert ready to send via WhatsApp!`);
-            }
-          } catch (error) {
-            toast.error('Failed to send SOS alert');
-          }
-        },
-        (error) => {
-          toast.error('Unable to get location for SOS');
-        }
-      );
-    } else {
-      toast.error('Geolocation not supported');
+  const getCrimeBadgeText = (type) => {
+    switch(type) {
+      case 'theft': return 'THEFT';
+      case 'women_safety': return 'WOMEN SAFETY';
+      case 'drugs': return 'DRUGS';
+      default: return 'INCIDENT';
     }
   };
 
-  // Heatmap layer configuration
+  // Category-specific popup content (show only title)
+  const getCrimePopupContent = (crime) => {
+    return (
+      <div className="p-3 min-w-64">
+        <div className="flex items-center justify-between mb-2">
+          <Badge 
+            className="text-xs text-white"
+            style={{ backgroundColor: getCrimeColor(crime.crime_type) }}
+          >
+            {getCrimeBadgeText(crime.crime_type)}
+          </Badge>
+          <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+            {crime.severity.toUpperCase()}
+          </Badge>
+        </div>
+        
+        {/* Only show title for category-specific popups */}
+        <h4 className="font-semibold text-gray-900 mb-2">{crime.title}</h4>
+        
+        <div className="flex items-center text-xs text-gray-500">
+          <Calendar className="w-3 h-3 mr-1" />
+          {formatToIST(crime.created_at)}
+        </div>
+      </div>
+    );
+  };
+
   const heatmapLayer = {
-    id: 'crime-heatmap',
+    id: 'crimes-heat',
     type: 'heatmap',
-    source: 'crimes',
-    maxzoom: 15,
     paint: {
       'heatmap-weight': {
         property: 'severity',
         type: 'categorical',
         stops: [
-          ['low', 1],
-          ['medium', 2], 
-          ['high', 3]
+          ['low', 0.3],
+          ['medium', 0.6],
+          ['high', 1]
         ]
       },
       'heatmap-intensity': {
@@ -243,17 +324,24 @@ const CrimeMap = () => {
           [11, 15],
           [15, 20]
         ]
+      },
+      'heatmap-opacity': {
+        default: 0.6,
+        stops: [
+          [14, 0.6],
+          [22, 0]
+        ]
       }
     }
   };
 
   const geojsonData = {
     type: 'FeatureCollection',
-    features: filteredCrimes.map(crime => ({
+    features: visibleCrimes.map(crime => ({
       type: 'Feature',
       properties: {
         severity: crime.severity,
-        type: crime.type
+        type: crime.crime_type
       },
       geometry: {
         type: 'Point',
@@ -274,7 +362,7 @@ const CrimeMap = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-900 text-white relative">
+    <div className="h-screen bg-gray-900 text-white relative flex">
       {/* Location Permission Dialog */}
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
         <DialogContent className="bg-gray-800 border-gray-700 text-white">
@@ -309,40 +397,173 @@ const CrimeMap = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-4">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Dashboard
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-2">
-              <Shield className="w-6 h-6 text-red-500" />
-              <span className="text-lg font-bold text-white">Echo Crime Map</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-300">Welcome, {user?.name}</span>
-            <Link to="/profile">
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:bg-gray-700">
-                <User className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Button onClick={handleLogout} variant="ghost" size="sm" className="text-red-400 hover:bg-red-900/20">
-              <LogOut className="w-4 h-4" />
+      {/* Incident List Sidebar */}
+      <div className={`${showIncidentList ? 'w-80' : 'w-12'} transition-all duration-300 bg-gray-800/90 backdrop-blur-md border-r border-gray-700 z-40 flex flex-col`}>
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            {showIncidentList && (
+              <div className="flex items-center space-x-2">
+                <List className="w-5 h-5 text-red-500" />
+                <span className="font-semibold text-white">Incidents</span>
+                <Badge variant="outline" className="text-xs">
+                  {visibleCrimes.length}
+                </Badge>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowIncidentList(!showIncidentList)}
+              className="text-gray-300 hover:bg-gray-700"
+            >
+              {showIncidentList ? <ChevronDown className="w-4 h-4" /> : <List className="w-4 h-4" />}
             </Button>
           </div>
         </div>
+
+        {showIncidentList && (
+          <>
+            {/* Filter Controls */}
+            <div className="p-4 border-b border-gray-700">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
+                <Filter className="w-4 h-4 mr-2 text-red-500" />
+                Filter Crimes
+              </h3>
+              <div className="space-y-2">
+                <Button
+                  size="sm"
+                  variant={filter === 'all' ? 'default' : 'ghost'}
+                  onClick={() => setFilter('all')}
+                  className="w-full justify-start text-left text-white"
+                >
+                  All Crimes ({crimes.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filter === 'theft' ? 'default' : 'ghost'}
+                  onClick={() => setFilter('theft')}
+                  className="w-full justify-start text-left"
+                  style={{ color: filter === 'theft' ? 'white' : '#dc2626' }}
+                >
+                  🔒 Theft ({crimes.filter(c => c.crime_type === 'theft').length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filter === 'women_safety' ? 'default' : 'ghost'}
+                  onClick={() => setFilter('women_safety')}
+                  className="w-full justify-start text-left"
+                  style={{ color: filter === 'women_safety' ? 'white' : '#ec4899' }}
+                >
+                  👩 Women Safety ({crimes.filter(c => c.crime_type === 'women_safety').length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filter === 'drugs' ? 'default' : 'ghost'}
+                  onClick={() => setFilter('drugs')}
+                  className="w-full justify-start text-left"
+                  style={{ color: filter === 'drugs' ? 'white' : '#3b82f6' }}
+                >
+                  💊 Drugs ({crimes.filter(c => c.crime_type === 'drugs').length})
+                </Button>
+              </div>
+            </div>
+
+            {/* Incident List */}
+            <div className="flex-1 overflow-y-auto" ref={incidentListRef}>
+              <div className="p-2">
+                {visibleCrimes.length > 0 ? (
+                  visibleCrimes.map((crime) => (
+                    <div
+                      key={crime.id}
+                      id={`incident-${crime.id}`}
+                      className={`p-3 mb-2 rounded-lg border cursor-pointer transition-all duration-200 ${
+                        selectedCrime?.id === crime.id
+                          ? 'bg-gray-700 border-red-500'
+                          : hoveredCrime?.id === crime.id
+                          ? 'bg-gray-700/50 border-gray-600'
+                          : 'bg-gray-800/50 border-gray-700 hover:bg-gray-700/30 hover:border-gray-600'
+                      }`}
+                      onClick={() => handleIncidentClick(crime)}
+                      onMouseEnter={() => handleCrimeHover(crime)}
+                      onMouseLeave={handleCrimeLeave}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <Badge 
+                          className="text-xs text-white"
+                          style={{ backgroundColor: getCrimeColor(crime.crime_type) }}
+                        >
+                          {getCrimeBadgeText(crime.crime_type)}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                          {crime.severity.toUpperCase()}
+                        </Badge>
+                      </div>
+                      
+                      <h4 className="font-medium text-white text-sm mb-1 line-clamp-2">
+                        {crime.title}
+                      </h4>
+                      
+                      <div className="flex items-center text-xs text-gray-400 mb-1">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        <span className="truncate">{crime.location.address}</span>
+                      </div>
+                      
+                      <div className="flex items-center text-xs text-gray-400">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {formatToIST(crime.created_at)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No incidents in current view</p>
+                    <p className="text-xs">Zoom out or pan to see more</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Map Container */}
-      <div className="h-full pt-16" style={{ minHeight: '500px' }}>
-        <div style={{ borderRadius: '12px', overflow: 'hidden', height: '100%' }}>
+      {/* Main Map Container */}
+      <div className="flex-1 relative">
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+              <div className="flex items-center space-x-2">
+                <Shield className="w-6 h-6 text-red-500" />
+                <span className="text-lg font-bold text-white">Echo Crime Map</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-300">Welcome, {user?.name}</span>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="text-gray-300 hover:bg-gray-700">
+                  <User className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Button onClick={handleLogout} variant="ghost" size="sm" className="text-red-400 hover:bg-red-900/20">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Map */}
+        <div className="h-full pt-16">
           <Map
+            ref={mapRef}
             {...viewState}
             onMove={evt => setViewState(evt.viewState)}
             mapboxAccessToken={MAPBOX_TOKEN}
@@ -356,33 +577,49 @@ const CrimeMap = () => {
               <Layer {...heatmapLayer} />
             </Source>
 
-            {/* Crime Markers with Ripple Effect */}
-            {filteredCrimes.map((crime) => (
+            {/* Crime Markers with Fixed Ripple Effect */}
+            {visibleCrimes.map((crime) => (
               <Marker
                 key={crime.id}
                 longitude={crime.location.lng}
                 latitude={crime.location.lat}
-                anchor="bottom"
+                anchor="center"
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
-                  setSelectedCrime(crime);
+                  handleCrimeClick(crime);
                 }}
               >
-                <div className="relative">
-                  {/* Ripple Animation */}
+                <div 
+                  className="relative cursor-pointer"
+                  onMouseEnter={() => handleCrimeHover(crime)}
+                  onMouseLeave={handleCrimeLeave}
+                >
+                  {/* Fixed Ripple Animation - anchored to exact coordinates */}
                   <div 
-                    className="absolute inset-0 w-8 h-8 rounded-full animate-ping"
-                    style={{ backgroundColor: getCrimeColor(crime.type), opacity: 0.4 }}
+                    className={`absolute inset-0 w-8 h-8 rounded-full animate-ping transform -translate-x-1/2 -translate-y-1/2 ${
+                      hoveredCrime?.id === crime.id ? 'animate-pulse' : 'animate-ping'
+                    }`}
+                    style={{ 
+                      backgroundColor: getCrimeColor(crime.crime_type), 
+                      opacity: hoveredCrime?.id === crime.id ? 0.8 : 0.4,
+                      left: '50%',
+                      top: '50%'
+                    }}
                   ></div>
-                  {/* Main Marker */}
+                  
+                  {/* Main Marker - centered and fixed */}
                   <div 
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold cursor-pointer shadow-lg relative z-10"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-lg relative z-10 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ${
+                      hoveredCrime?.id === crime.id ? 'scale-110' : 'scale-100'
+                    } ${selectedCrime?.id === crime.id ? 'ring-2 ring-white' : ''}`}
                     style={{
-                      backgroundColor: getCrimeColor(crime.type),
-                      boxShadow: `0 0 20px ${getCrimeColor(crime.type)}60`
+                      backgroundColor: getCrimeColor(crime.crime_type),
+                      boxShadow: `0 0 20px ${getCrimeColor(crime.crime_type)}60`,
+                      left: '50%',
+                      top: '50%'
                     }}
                   >
-                    {getCrimeIcon(crime.type)}
+                    {getCrimeIcon(crime.crime_type)}
                   </div>
                 </div>
               </Marker>
@@ -393,13 +630,13 @@ const CrimeMap = () => {
               <Marker
                 longitude={currentLocation.longitude}
                 latitude={currentLocation.latitude}
-                anchor="bottom"
+                anchor="center"
               >
-                <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+                <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse transform -translate-x-1/2 -translate-y-1/2"></div>
               </Marker>
             )}
 
-            {/* Crime Details Popup */}
+            {/* Crime Details Popup - Category-specific content */}
             {selectedCrime && (
               <Popup
                 longitude={selectedCrime.location.lng}
@@ -407,89 +644,16 @@ const CrimeMap = () => {
                 anchor="top"
                 onClose={() => setSelectedCrime(null)}
                 className="mapboxgl-popup"
+                closeButton={true}
+                closeOnClick={false}
               >
-                <div className="p-3 min-w-64">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge 
-                      className="text-xs text-white"
-                      style={{ backgroundColor: getCrimeColor(selectedCrime.type) }}
-                    >
-                      {selectedCrime.type.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
-                      {selectedCrime.severity.toUpperCase()}
-                    </Badge>
-                  </div>
-                  
-                  <h3 className="text-white font-semibold text-sm mb-2">
-                    {selectedCrime.title}
-                  </h3>
-                  
-                  <div className="flex items-center text-gray-300 text-xs mb-1">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    {formatDate(selectedCrime.created_at)}
-                  </div>
-                  
-                  <div className="flex items-center text-gray-300 text-xs">
-                    <MapPin className="w-3 h-3 mr-1" />
-                    {selectedCrime.location.address || 
-                     `${selectedCrime.location.lat.toFixed(4)}, ${selectedCrime.location.lng.toFixed(4)}`}
-                  </div>
-                </div>
+                {getCrimePopupContent(selectedCrime)}
               </Popup>
             )}
           </Map>
         </div>
 
-        {/* Controls Overlay */}
-        <div className="absolute top-20 left-4 space-y-4 z-40">
-          {/* Filter Controls */}
-          <Card className="feature-card p-4">
-            <h3 className="text-white font-semibold mb-3 flex items-center">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter Crimes
-            </h3>
-            <div className="space-y-2">
-              <Button
-                size="sm"
-                variant={filter === 'all' ? 'default' : 'ghost'}
-                onClick={() => setFilter('all')}
-                className="w-full justify-start text-left text-white"
-              >
-                All Crimes ({crimes.length})
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === 'theft' ? 'default' : 'ghost'}
-                onClick={() => setFilter('theft')}
-                className="w-full justify-start text-left"
-                style={{ color: filter === 'theft' ? 'white' : '#dc2626' }}
-              >
-                🔒 Theft ({crimes.filter(c => c.type === 'theft').length})
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === 'women_safety' ? 'default' : 'ghost'}
-                onClick={() => setFilter('women_safety')}
-                className="w-full justify-start text-left"
-                style={{ color: filter === 'women_safety' ? 'white' : '#ec4899' }}
-              >
-                👩 Women Safety ({crimes.filter(c => c.type === 'women_safety').length})
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === 'drugs' ? 'default' : 'ghost'}
-                onClick={() => setFilter('drugs')}
-                className="w-full justify-start text-left"
-                style={{ color: filter === 'drugs' ? 'white' : '#3b82f6' }}
-              >
-                💊 Drugs ({crimes.filter(c => c.type === 'drugs').length})
-              </Button>
-            </div>
-          </Card>
-        </div>
-
-        {/* Legend - Fixed bottom-left with white text */}
+        {/* Legend - Fixed bottom-left */}
         <div className="absolute bottom-8 left-4 z-40">
           <Card className="bg-black/70 backdrop-blur-md border-gray-700 p-4">
             <h3 className="text-white font-semibold mb-3">Legend</h3>
@@ -510,7 +674,7 @@ const CrimeMap = () => {
           </Card>
         </div>
 
-        {/* Emergency SOS Button with WhatsApp */}
+        {/* Emergency SOS Button */}
         <div className="absolute bottom-8 right-8 z-40">
           <Button
             onClick={handleSOS}
