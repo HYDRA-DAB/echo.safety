@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
-import { MapPin, Shield, AlertTriangle, Users, Brain, TrendingUp, Zap, Phone, ChevronRight, Eye, Bell, MessageSquare } from 'lucide-react';
+import { MapPin, Shield, AlertTriangle, Users, Brain, TrendingUp, Zap, Phone, ChevronRight, Eye, Bell, MessageSquare, BookOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
@@ -24,13 +24,13 @@ const LandingPage = () => {
     {
       icon: <Zap className="w-8 h-8" />,
       title: "One-Click SOS",
-      description: "Emergency alert system that instantly shares your location with campus security and emergency contacts",
+      description: "Emergency alert system that instantly shares your location via WhatsApp with campus security and emergency contacts",
       color: "neon-glow-pink"
     },
     {
-      icon: <Eye className="w-8 h-8" />,
-      title: "News & Safety Tips",
-      description: "Daily safety updates, crime prevention tips, and important campus security announcements",
+      icon: <BookOpen className="w-8 h-8" />,
+      title: "Safety Tips & Guides",
+      description: "Comprehensive safety guidelines, prevention tips, and emergency procedures for campus security",
       color: "neon-glow-red"
     }
   ];
@@ -50,8 +50,8 @@ const LandingPage = () => {
     },
     {
       icon: <MessageSquare className="w-8 h-8" />,
-      title: "Anonymous Tip Line",
-      description: "Secure anonymous reporting system for drug activities, harassment, and other campus crimes",
+      title: "WhatsApp Emergency Alerts",
+      description: "Instant SOS messages with live location sharing through WhatsApp to emergency contacts",
       gradient: "crime-drugs"
     }
   ];
@@ -79,12 +79,12 @@ const LandingPage = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <Shield className="w-8 h-8 text-red-500" />
-              <span className="text-xl font-bold">Campus Safety SRM</span>
+              <span className="text-xl font-bold text-white">Echo</span>
             </div>
             <div className="flex items-center space-x-4">
               {user ? (
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm">Welcome, {user.name}</span>
+                  <span className="text-sm text-white">Welcome, {user.name}</span>
                   <Link to="/dashboard">
                     <Button className="btn-primary">Dashboard</Button>
                   </Link>
@@ -110,10 +110,10 @@ const LandingPage = () => {
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="fade-in">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-red-200 to-pink-200 bg-clip-text text-transparent">
-              Campus Crime Alert
+              Echo
             </h1>
             <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-red-400">
-              & Prevention – SRM KTR
+              Campus Crime Alert & Prevention – SRM KTR
             </h2>
             <p className="text-xl md:text-2xl mb-12 text-gray-300 font-medium">
               Safer, Smarter, Stronger Campus
@@ -134,10 +134,12 @@ const LandingPage = () => {
                 </Button>
               </Link>
               
-              <Button className="btn-sos px-8 py-4 text-lg font-semibold">
-                <Phone className="w-5 h-5 mr-2" />
-                SOS Emergency
-              </Button>
+              <Link to={user ? "/safety-tips" : "/safety-tips"}>
+                <Button className="btn-secondary px-8 py-4 text-lg font-semibold">
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  Safety Tips
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -147,7 +149,7 @@ const LandingPage = () => {
       <section className="py-20 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 slide-up">
-            <h2 className="text-4xl font-bold mb-4">Core Features</h2>
+            <h2 className="text-4xl font-bold mb-4 text-white">Core Features</h2>
             <p className="text-xl text-gray-400">Advanced safety tools for campus protection</p>
           </div>
           
@@ -155,7 +157,7 @@ const LandingPage = () => {
             {features.map((feature, index) => (
               <Card key={index} className={`feature-card p-6 ${feature.color}`}>
                 <div className="text-red-400 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                <h3 className="text-xl font-semibold mb-3 text-white">{feature.title}</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">{feature.description}</p>
               </Card>
             ))}
@@ -167,7 +169,7 @@ const LandingPage = () => {
       <section className="py-20 bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 slide-up">
-            <h2 className="text-4xl font-bold mb-4">Innovation Hub</h2>
+            <h2 className="text-4xl font-bold mb-4 text-white">Innovation Hub</h2>
             <p className="text-xl text-gray-400">Cutting-edge technology for campus safety</p>
           </div>
           
@@ -187,7 +189,7 @@ const LandingPage = () => {
       <section className="py-20 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 slide-up">
-            <h2 className="text-4xl font-bold mb-4">Our Impact</h2>
+            <h2 className="text-4xl font-bold mb-4 text-white">Our Impact</h2>
             <p className="text-xl text-gray-400">Making SRM KTR campus safer every day</p>
           </div>
           
@@ -195,7 +197,7 @@ const LandingPage = () => {
             {impact.map((stat, index) => (
               <Card key={index} className="stat-card text-center">
                 <div className="text-4xl font-bold text-red-400 mb-2">{stat.number}</div>
-                <div className="text-xl font-semibold mb-2">{stat.label}</div>
+                <div className="text-xl font-semibold mb-2 text-white">{stat.label}</div>
                 <div className="text-gray-400 text-sm">{stat.description}</div>
               </Card>
             ))}
@@ -213,7 +215,7 @@ const LandingPage = () => {
               <div className="space-y-3">
                 {helplines.map((helpline, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <span className="text-sm font-medium">{helpline.name}</span>
+                    <span className="text-sm font-medium text-white">{helpline.name}</span>
                     <a href={`tel:${helpline.number}`} className="text-red-400 font-bold hover:text-red-300">
                       {helpline.number}
                     </a>
@@ -228,11 +230,11 @@ const LandingPage = () => {
               <div className="space-y-3">
                 <Link to="/about" className="flex items-center text-gray-300 hover:text-white">
                   <ChevronRight className="w-4 h-4 mr-2" />
-                  About Us
+                  About Echo
                 </Link>
-                <Link to="/report" className="flex items-center text-gray-300 hover:text-white">
+                <Link to="/safety-tips" className="flex items-center text-gray-300 hover:text-white">
                   <ChevronRight className="w-4 h-4 mr-2" />
-                  Report Crime
+                  Safety Tips
                 </Link>
                 <Link to="/contact" className="flex items-center text-gray-300 hover:text-white">
                   <ChevronRight className="w-4 h-4 mr-2" />
@@ -253,14 +255,14 @@ const LandingPage = () => {
               </p>
               <div className="flex items-center space-x-2">
                 <Shield className="w-5 h-5 text-red-500" />
-                <span className="text-sm text-gray-400">Secured by Campus Safety Team</span>
+                <span className="text-sm text-gray-400">Secured by Echo Safety Team</span>
               </div>
             </div>
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Campus Crime Alert & Prevention - SRM KTR. All rights reserved.
+              © 2024 Echo - Campus Crime Alert & Prevention - SRM KTR. All rights reserved.
             </p>
           </div>
         </div>
