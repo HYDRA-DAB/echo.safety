@@ -374,66 +374,176 @@ const Dashboard = () => {
                 </div>
               </Card>
             </DialogTrigger>
-            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-white">Report Crime Incident</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleReportSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="title" className="text-white">Title</Label>
-                  <Input
-                    id="title"
-                    value={reportForm.title}
-                    onChange={(e) => setReportForm({...reportForm, title: e.target.value})}
-                    className="input-field"
-                    placeholder="Brief description of incident"
-                    required
-                  />
+              <form onSubmit={handleReportSubmit} className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title" className="text-white">Title *</Label>
+                    <Input
+                      id="title"
+                      value={reportForm.title}
+                      onChange={(e) => setReportForm({...reportForm, title: e.target.value})}
+                      className="input-field"
+                      placeholder="Brief description of incident"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="crime_type" className="text-white">Crime Type *</Label>
+                    <Select value={reportForm.crime_type} onValueChange={(value) => setReportForm({...reportForm, crime_type: value})}>
+                      <SelectTrigger className="input-field">
+                        <SelectValue placeholder="Select crime type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-700">
+                        <SelectItem value="theft">Theft</SelectItem>
+                        <SelectItem value="women_safety">Women Safety</SelectItem>
+                        <SelectItem value="drugs">Drug Related</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                
+
                 <div>
-                  <Label htmlFor="crime_type" className="text-white">Crime Type</Label>
-                  <Select value={reportForm.crime_type} onValueChange={(value) => setReportForm({...reportForm, crime_type: value})}>
-                    <SelectTrigger className="input-field">
-                      <SelectValue placeholder="Select crime type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="theft">Theft</SelectItem>
-                      <SelectItem value="women_safety">Women Safety</SelectItem>
-                      <SelectItem value="drugs">Drug Related</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="severity" className="text-white">Severity</Label>
+                  <Label htmlFor="severity" className="text-white">Priority Level *</Label>
                   <Select value={reportForm.severity} onValueChange={(value) => setReportForm({...reportForm, severity: value})}>
                     <SelectTrigger className="input-field">
-                      <SelectValue placeholder="Select severity" />
+                      <SelectValue placeholder="Select priority level" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="low">Low Priority</SelectItem>
+                      <SelectItem value="medium">Medium Priority</SelectItem>
+                      <SelectItem value="high">High Priority</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Crime Location Section */}
+                <div className="border-t border-gray-700 pt-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <MapPin className="w-5 h-5 text-red-400" />
+                    <h3 className="text-lg font-semibold text-white">Crime Location *</h3>
+                  </div>
+                  
+                  {/* Location Method Selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <Button
+                      type="button"
+                      onClick={useCurrentLocation}
+                      disabled={locationLoading}
+                      className={`p-4 h-auto flex flex-col items-center space-y-2 ${
+                        locationMethod === 'current' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'
+                      }`}
+                    >
+                      <Navigation className="w-6 h-6" />
+                      <span className="text-sm font-medium">Use Current Location</span>
+                    </Button>
+                    
+                    <div className="flex flex-col space-y-2">
+                      <Button
+                        type="button"
+                        onClick={searchAddress}
+                        disabled={locationLoading}
+                        className={`p-4 h-auto flex flex-col items-center space-y-2 ${
+                          locationMethod === 'search' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'
+                        }`}
+                      >
+                        <Search className="w-6 h-6" />
+                        <span className="text-sm font-medium">Search Address</span>
+                      </Button>
+                      <Input
+                        type="text"
+                        placeholder="Enter address..."
+                        value={addressSearch}
+                        onChange={(e) => setAddressSearch(e.target.value)}
+                        className="input-field text-xs"
+                        onKeyPress={(e) => e.key === 'Enter' && searchAddress()}
+                      />
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      onClick={selectOnMap}
+                      disabled={locationLoading}
+                      className={`p-4 h-auto flex flex-col items-center space-y-2 ${
+                        locationMethod === 'map' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'
+                      }`}
+                    >
+                      <Map className="w-6 h-6" />
+                      <span className="text-sm font-medium">Pick on Map</span>
+                    </Button>
+                  </div>
+
+                  {/* Selected Location Display */}
+                  {reportForm.location && (
+                    <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <MapPin className="w-4 h-4 text-green-400" />
+                        <span className="text-green-400 font-medium">Location Set</span>
+                      </div>
+                      <p className="text-green-200 text-sm">
+                        {reportForm.location.address}
+                      </p>
+                      <p className="text-green-300 text-xs mt-1">
+                        Coordinates: {reportForm.location.lat.toFixed(4)}, {reportForm.location.lng.toFixed(4)}
+                      </p>
+                    </div>
+                  )}
+
+                  {locationLoading && (
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                        <span className="text-blue-400 text-sm">Getting location...</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!reportForm.location && !locationLoading && (
+                    <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3">
+                      <p className="text-red-200 text-sm">
+                        ⚠️ Please select a location using one of the methods above
+                      </p>
+                    </div>
+                  )}
+                </div>
                 
                 <div>
-                  <Label htmlFor="description" className="text-white">Description</Label>
+                  <Label htmlFor="description" className="text-white">Detailed Description *</Label>
                   <Textarea
                     id="description"
                     value={reportForm.description}
                     onChange={(e) => setReportForm({...reportForm, description: e.target.value})}
                     className="input-field"
-                    placeholder="Detailed description of the incident"
-                    rows={3}
+                    placeholder="Provide detailed information about the incident, including time, people involved, and any other relevant details"
+                    rows={4}
                     required
                   />
                 </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="anonymous"
+                    checked={reportForm.is_anonymous}
+                    onChange={(e) => setReportForm({...reportForm, is_anonymous: e.target.checked})}
+                    className="rounded border-gray-600"
+                  />
+                  <Label htmlFor="anonymous" className="text-white text-sm">
+                    Submit anonymously (your identity will not be disclosed)
+                  </Label>
+                </div>
                 
-                <Button type="submit" className="w-full btn-primary">
-                  Submit Report
+                <Button 
+                  type="submit" 
+                  className="w-full btn-primary"
+                  disabled={!reportForm.location || locationLoading}
+                >
+                  Submit Crime Report
                 </Button>
               </form>
             </DialogContent>
