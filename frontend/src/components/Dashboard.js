@@ -14,7 +14,11 @@ import {
   LogOut,
   Phone,
   Calendar,
-  Activity
+  Activity,
+  Navigation,
+  Search,
+  Map,
+  FileText
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
