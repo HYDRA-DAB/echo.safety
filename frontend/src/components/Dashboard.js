@@ -39,7 +39,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   
   const [crimes, setCrimes] = useState([]);
-  const [predictions, setPredictions] = useState([]);
+  const [aiAnalysis, setAiAnalysis] = useState({
+    predictions: [],
+    trend_analysis: null,
+    safety_tips: [],
+    news_articles_analyzed: 0,
+    last_updated: null
+  });
   const [loading, setLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportForm, setReportForm] = useState({
