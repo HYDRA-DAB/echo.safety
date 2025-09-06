@@ -9,6 +9,7 @@ import CrimeMap from "./components/CrimeMap";
 import Dashboard from "./components/Dashboard";
 import SafetyTips from "./components/SafetyTips";
 import ReportsPage from "./components/ReportsPage";
+import Profile from "./components/Profile";
 import { Toaster } from "./components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
