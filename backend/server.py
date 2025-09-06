@@ -21,6 +21,10 @@ from ai_predictor import AICrimePredictor, CrimePrediction, TrendAnalysis
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# API Keys and Configuration
+NEWS_API_KEY = os.environ.get('NEWS_API_KEY')
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
