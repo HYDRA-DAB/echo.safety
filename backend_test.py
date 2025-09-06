@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 
 class CampusSafetyAPITester:
-    def __init__(self, base_url="https://campus-safety.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://crimeguard-3.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.user_data = None
