@@ -200,6 +200,22 @@ class AIAnalysisResponse(BaseModel):
     news_articles_analyzed: int
     last_updated: datetime
 
+# Voice Chatbot Models
+class VoiceChatMessage(BaseModel):
+    message: str
+    incident_type: Optional[str] = None  # "theft", "harassment", "drug_abuse", "other"
+    priority_level: Optional[str] = None  # "low", "medium", "high"
+    conversation_stage: Optional[str] = "initial"  # "initial", "incident_type", "priority", "actions", "signin_help"
+    session_id: Optional[str] = None
+
+class VoiceChatResponse(BaseModel):
+    response: str
+    quick_replies: List[str] = []
+    buttons: List[Dict[str, str]] = []  # {"text": "Button Text", "action": "action_type"}
+    conversation_stage: str
+    show_serious_actions: bool = False
+    session_id: str
+
 # Authentication helpers
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
