@@ -13,7 +13,6 @@ import {
   Brain,
   LogOut,
   Phone,
-  FileText,
   Calendar,
   Activity
 } from 'lucide-react';
