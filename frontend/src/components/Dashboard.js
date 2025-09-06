@@ -57,6 +57,19 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Use recent crimes API instead of all crimes
+  const fetchRecentCrimes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.get(`${API}/crimes/recent?limit=5`, { headers });
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching recent crimes:', error);
+      return [];
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
