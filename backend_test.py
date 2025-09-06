@@ -345,6 +345,51 @@ class CampusSafetyAPITester:
             self.log_test("Get SOS Alerts", False, f"Status: {status}")
             return False
 
+    def test_get_recent_crimes(self):
+        """Test getting recent crimes endpoint"""
+        print("\n🔍 Testing Get Recent Crimes...")
+        
+        response = self.make_request('GET', 'crimes/recent?limit=5')
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = isinstance(data, list) and len(data) <= 5
+                self.log_test("Get Recent Crimes", success, f"Found {len(data)} recent crimes")
+                return success
+            except Exception as e:
+                self.log_test("Get Recent Crimes", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Get Recent Crimes", False, f"Status: {status}")
+            return False
+
+    def test_get_trusted_contacts(self):
+        """Test getting user's trusted contacts"""
+        print("\n🔍 Testing Get Trusted Contacts...")
+        
+        if not self.token:
+            self.log_test("Get Trusted Contacts", False, "No authentication token")
+            return False
+        
+        response = self.make_request('GET', 'user/trusted-contacts', auth_required=True)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = 'trusted_contacts' in data and isinstance(data['trusted_contacts'], list)
+                contacts_count = len(data.get('trusted_contacts', []))
+                self.log_test("Get Trusted Contacts", success, f"Found {contacts_count} trusted contacts")
+                return success
+            except Exception as e:
+                self.log_test("Get Trusted Contacts", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Get Trusted Contacts", False, f"Status: {status}")
+            return False
+
     def test_ai_predictions(self):
         """Test AI predictions endpoint"""
         print("\n🔍 Testing AI Predictions...")
