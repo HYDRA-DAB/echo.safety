@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import Map, { Marker, Popup, Source, Layer } from 'react-map-gl/mapbox';
@@ -15,7 +15,9 @@ import {
   Clock,
   LogOut,
   Navigation,
-  MessageCircle
+  MessageCircle,
+  List,
+  Eye
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
