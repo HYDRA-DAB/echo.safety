@@ -7,7 +7,6 @@ import {
   Shield, 
   ArrowLeft, 
   Plus, 
-  Filter, 
   AlertTriangle, 
   MapPin, 
   Calendar,
@@ -19,8 +18,7 @@ import {
   List,
   Eye,
   ChevronDown,
-  ChevronUp,
-  BarChart3
+  ChevronUp
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
