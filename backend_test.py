@@ -286,8 +286,8 @@ class CampusSafetyAPITester:
             return False
 
     def test_sos_alert(self):
-        """Test SOS alert creation"""
-        print("\n🔍 Testing SOS Alert...")
+        """Test SOS alert creation with trusted contacts integration"""
+        print("\n🔍 Testing SOS Alert with Trusted Contacts...")
         
         if not self.token:
             self.log_test("SOS Alert", False, "No authentication token")
@@ -297,7 +297,8 @@ class CampusSafetyAPITester:
             "location": {
                 "lat": 12.8230,
                 "lng": 80.0444,
-                "address": "SRM KTR Campus Emergency"
+                "address": "SRM KTR Campus Emergency",
+                "source": "current"
             },
             "emergency_type": "security"
         }
@@ -307,15 +308,21 @@ class CampusSafetyAPITester:
         if response and response.status_code == 200:
             try:
                 data = response.json()
-                success = 'id' in data and data.get('emergency_type') == 'security'
-                self.log_test("SOS Alert", success, f"SOS ID: {data.get('id')}")
+                success = ('id' in data and 
+                          data.get('emergency_type') == 'security' and
+                          'trusted_contacts_notified' in data)
+                
+                # Check if trusted contacts are included
+                contacts_notified = data.get('trusted_contacts_notified', [])
+                self.log_test("SOS Alert with Trusted Contacts", success, 
+                            f"SOS ID: {data.get('id')}, Contacts notified: {len(contacts_notified)}")
                 return success
-            except:
-                self.log_test("SOS Alert", False, "Invalid JSON response")
+            except Exception as e:
+                self.log_test("SOS Alert with Trusted Contacts", False, f"JSON error: {str(e)}")
                 return False
         else:
             status = response.status_code if response else "No response"
-            self.log_test("SOS Alert", False, f"Status: {status}")
+            self.log_test("SOS Alert with Trusted Contacts", False, f"Status: {status}")
             return False
 
     def test_get_sos_alerts(self):
