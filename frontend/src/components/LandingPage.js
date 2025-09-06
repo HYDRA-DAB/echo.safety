@@ -268,6 +268,98 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* About Us Dialog */}
+      <Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center text-2xl">
+              <Shield className="w-6 h-6 mr-2 text-red-500" />
+              About Echo
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-gray-300 leading-relaxed text-base">
+              Echo is a crime prediction, alert, and prevention platform designed for SRM KTR University students. Through an interactive crime map, incidents of women's safety concerns, theft, and drug abuse are highlighted with ripple markers that spread like echoes of disturbance across and around the campus.
+            </p>
+            <p className="text-gray-300 leading-relaxed text-base">
+              The platform issues real-time alerts when a user enters a hotspot, while a one-tap SOS system notifies police and nearby peers to trigger an immediate response. Alongside a live crime feed and a helpline directory, Echo ensures that no incident goes unnoticed, no call for help goes unheard, and every student feels empowered to act against crime.
+            </p>
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mt-6">
+              <div className="flex items-center space-x-2 mb-2">
+                <Shield className="w-5 h-5 text-red-400" />
+                <h3 className="text-red-400 font-semibold">Our Mission</h3>
+              </div>
+              <p className="text-red-200 text-sm">
+                Creating a safer campus environment through technology, community engagement, and proactive security measures for all SRM KTR students.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Support Dialog */}
+      <Dialog open={showSupportDialog} onOpenChange={setShowSupportDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center text-xl">
+              <Phone className="w-5 h-5 mr-2 text-red-500" />
+              Support Team
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-4">
+              <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center space-x-3 mb-2">
+                  <User className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-white font-semibold">Tanmay Rai</h3>
+                </div>
+                <a 
+                  href="tel:9041719990" 
+                  className="text-red-400 font-bold text-lg hover:text-red-300 block"
+                >
+                  9041719990
+                </a>
+                <p className="text-gray-400 text-xs mt-1">Tap to call</p>
+              </div>
+
+              <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center space-x-3 mb-2">
+                  <User className="w-5 h-5 text-green-400" />
+                  <h3 className="text-white font-semibold">Harsh Swaroop</h3>
+                </div>
+                <a 
+                  href="tel:9599342435" 
+                  className="text-red-400 font-bold text-lg hover:text-red-300 block"
+                >
+                  9599342435
+                </a>
+                <p className="text-gray-400 text-xs mt-1">Tap to call</p>
+              </div>
+
+              <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center space-x-3 mb-2">
+                  <Mail className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-white font-semibold">Email Support</h3>
+                </div>
+                <a 
+                  href="mailto:sprt.echo.alert@gmail.com" 
+                  className="text-red-400 font-medium hover:text-red-300 block break-all"
+                >
+                  sprt.echo.alert@gmail.com
+                </a>
+                <p className="text-gray-400 text-xs mt-1">Tap to email</p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 mt-4">
+              <p className="text-blue-200 text-sm text-center">
+                📞 Available 24/7 for emergency support and technical assistance
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
