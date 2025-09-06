@@ -452,22 +452,33 @@ const Dashboard = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="crime_type" className="text-yellow-400 font-medium">Crime Type *</Label>
+                    <Label htmlFor="crime_type" className="text-white font-medium">Crime Type *</Label>
                     <Select value={reportForm.crime_type} onValueChange={(value) => setReportForm({...reportForm, crime_type: value})}>
                       <SelectTrigger className="input-field">
                         <SelectValue placeholder="Select crime type" />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-700">
-                        <SelectItem value="theft">Theft</SelectItem>
-                        <SelectItem value="women_safety">Women Safety</SelectItem>
-                        <SelectItem value="drugs">Drug Related</SelectItem>
+                        <SelectItem value="theft" className="text-yellow-400">Theft</SelectItem>
+                        <SelectItem value="women_safety" className="text-yellow-400">Women Safety</SelectItem>
+                        <SelectItem value="drugs" className="text-yellow-400">Drug Related</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="severity" className="text-yellow-400 font-medium">Priority Level *</Label>
+                  <Label htmlFor="severity" className="text-white font-medium">Priority Level *</Label>
+                  <Select value={reportForm.severity} onValueChange={(value) => setReportForm({...reportForm, severity: value})}>
+                    <SelectTrigger className="input-field">
+                      <SelectValue placeholder="Select priority level" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectItem value="low" className="text-yellow-400">Low Priority</SelectItem>
+                      <SelectItem value="medium" className="text-yellow-400">Medium Priority</SelectItem>
+                      <SelectItem value="high" className="text-yellow-400">High Priority</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                   <Select value={reportForm.severity} onValueChange={(value) => setReportForm({...reportForm, severity: value})}>
                     <SelectTrigger className="input-field">
                       <SelectValue placeholder="Select priority level" />
