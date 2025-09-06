@@ -1,110 +1,197 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Mic, MessageSquare, UserPlus, LogIn, AlertTriangle } from 'lucide-react';
+import { X, Mic, MessageSquare, UserPlus, LogIn, AlertTriangle, Send, Phone, Shield } from 'lucide-react';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Dialog, DialogContent } from './ui/dialog';
+import { toast } from 'sonner';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const VoiceChatbotModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const modalRef = useRef(null);
   const firstFocusableRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  
+  // Chat state
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversationStage, setConversationStage] = useState('initial');
+  const [sessionId, setSessionId] = useState(null);
+  const [currentQuickReplies, setCurrentQuickReplies] = useState([]);
+  const [currentButtons, setCurrentButtons] = useState([]);
+  const [showSeriousActions, setShowSeriousActions] = useState(false);
+
+  // Initialize conversation when modal opens
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      initializeConversation();
+    }
+  }, [isOpen]);
+
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Focus trap and keyboard handling
   useEffect(() => {
     if (isOpen) {
-      // Focus the first focusable element when modal opens
       setTimeout(() => {
         if (firstFocusableRef.current) {
           firstFocusableRef.current.focus();
         }
       }, 100);
 
-      // Handle Escape key
       const handleEscape = (e) => {
         if (e.key === 'Escape') {
           onClose();
         }
       };
 
-      // Handle Tab key for focus trap
-      const handleTab = (e) => {
-        if (e.key === 'Tab') {
-          const modal = modalRef.current;
-          if (!modal) return;
-
-          const focusableElements = modal.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-          );
-          const firstElement = focusableElements[0];
-          const lastElement = focusableElements[focusableElements.length - 1];
-
-          if (e.shiftKey) {
-            if (document.activeElement === firstElement) {
-              e.preventDefault();
-              lastElement.focus();
-            }
-          } else {
-            if (document.activeElement === lastElement) {
-              e.preventDefault();
-              firstElement.focus();
-            }
-          }
-        }
-      };
-
       document.addEventListener('keydown', handleEscape);
-      document.addEventListener('keydown', handleTab);
-
-      return () => {
-        document.removeEventListener('keydown', handleEscape);
-        document.removeEventListener('keydown', handleTab);
-      };
+      return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [isOpen, onClose]);
 
-  const handleNavigation = (path) => {
-    onClose();
-    navigate(path);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const conversationSteps = [
-    {
-      icon: <MessageSquare className="w-5 h-5 text-blue-400" />,
-      title: "Welcome to Echo!",
-      content: "Hi there! I'm your campus safety guide. Let me help you get started with Echo's safety features.",
-      type: "intro"
-    },
-    {
-      icon: <UserPlus className="w-5 h-5 text-green-400" />,
-      title: "Step 1: Create Your Account",
-      content: "First, you'll need to sign up with your SRM roll number and add two trusted emergency contacts. This ensures help can reach you quickly.",
-      type: "step"
-    },
-    {
-      icon: <LogIn className="w-5 h-5 text-purple-400" />,
-      title: "Step 2: Sign In & Explore",
-      content: "Once registered, sign in to access the crime map, view safety alerts, and report incidents. Your account keeps you connected to campus safety.",
-      type: "step"
-    },
-    {
-      icon: <AlertTriangle className="w-5 h-5 text-red-400" />,
-      title: "Step 3: Report Incidents",
-      content: "If you witness or experience a safety concern, use the Report Incident feature. Your reports help keep the entire campus safer.",
-      type: "step"
-    },
-    {
-      icon: <Mic className="w-5 h-5 text-orange-400" />,
-      title: "Serious Actions",
-      content: "In emergencies, use the SOS button to instantly alert your trusted contacts and campus security with your location via WhatsApp.",
-      type: "warning"
-    },
-    {
-      icon: <MessageSquare className="w-5 h-5 text-blue-400" />,
-      title: "You're All Set!",
-      content: "Echo is here to help you stay safe on campus. Remember, your safety and the community's safety go hand in hand. Stay vigilant, stay connected!",
-      type: "closing"
+  const initializeConversation = async () => {
+    const welcomeMessage = {
+      type: 'bot',
+      content: "Hi! I'm Voice, your campus safety guide. I'm here to help you with Echo's safety features. What can I help you with today?",
+      timestamp: new Date()
+    };
+    
+    setMessages([welcomeMessage]);
+    setCurrentQuickReplies(['Report an Incident', 'Need Help Signing In', 'Emergency Guidance', 'Other']);
+    setConversationStage('initial');
+  };
+
+  const sendMessage = async (message, incidentType = null, priorityLevel = null) => {
+    if (!message.trim() && !incidentType) return;
+
+    const userMessage = {
+      type: 'user',
+      content: message,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+    setCurrentQuickReplies([]);
+    setCurrentButtons([]);
+
+    try {
+      const requestData = {
+        message: message,
+        incident_type: incidentType,
+        priority_level: priorityLevel,
+        conversation_stage: conversationStage,
+        session_id: sessionId
+      };
+
+      const response = await axios.post(`${API}/voice`, requestData);
+      const data = response.data;
+
+      // Update session ID
+      if (data.session_id) {
+        setSessionId(data.session_id);
+      }
+
+      const botMessage = {
+        type: 'bot',
+        content: data.response,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+      setCurrentQuickReplies(data.quick_replies || []);
+      setCurrentButtons(data.buttons || []);
+      setConversationStage(data.conversation_stage);
+      setShowSeriousActions(data.show_serious_actions);
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage = {
+        type: 'bot',
+        content: "I'm having trouble right now. For immediate help, please contact campus security. If this is an emergency, call police immediately.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      toast.error('Unable to connect to chatbot service');
+    } finally {
+      setIsLoading(false);
+      setInputMessage('');
     }
-  ];
+  };
+
+  const handleQuickReply = (reply) => {
+    // Handle quick replies based on conversation stage
+    if (conversationStage === 'initial') {
+      const incidentTypeMap = {
+        'Report an Incident': 'other',
+        'Theft': 'theft',
+        'Harassment': 'harassment', 
+        'Drug Abuse': 'drug_abuse',
+        'Other': 'other'
+      };
+      sendMessage(reply, incidentTypeMap[reply] || 'other');
+    } else if (conversationStage === 'incident_type') {
+      const priorityMap = {
+        'Low': 'low',
+        'Medium': 'medium',
+        'High': 'high'
+      };
+      sendMessage(reply, null, priorityMap[reply]);
+    } else {
+      sendMessage(reply);
+    }
+  };
+
+  const handleButtonAction = (action) => {
+    switch (action) {
+      case 'open_report':
+        onClose();
+        navigate('/dashboard');
+        break;
+      case 'open_signin':
+        onClose();
+        navigate('/signin');
+        break;
+      case 'open_signup':
+        onClose();
+        navigate('/signup');
+        break;
+      case 'call_help':
+        window.open('tel:100', '_self');
+        break;
+      case 'restart':
+        setMessages([]);
+        setConversationStage('initial');
+        setSessionId(null);
+        initializeConversation();
+        break;
+      case 'help':
+        sendMessage('I need more help');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (inputMessage.trim()) {
+      sendMessage(inputMessage.trim());
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -112,21 +199,20 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         ref={modalRef}
-        className="bg-gray-900 border-gray-700 text-white w-full max-w-md mx-4 max-h-[95vh] overflow-hidden flex flex-col sm:max-w-lg sm:max-h-[560px] md:max-w-xl lg:max-w-2xl"
+        className="bg-gray-900 border-gray-700 text-white w-full max-w-md mx-4 h-[90vh] max-h-[600px] overflow-hidden flex flex-col sm:max-w-lg"
         aria-labelledby="voice-chatbot-title"
-        aria-describedby="voice-chatbot-description"
         onPointerDownOutside={onClose}
         onEscapeKeyDown={onClose}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <Mic className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 id="voice-chatbot-title" className="text-lg font-bold text-white">Voice — Beginner Guide</h2>
-              <p className="text-xs text-gray-400">Your campus safety assistant</p>
+              <h2 id="voice-chatbot-title" className="text-lg font-bold text-white">Voice</h2>
+              <p className="text-xs text-gray-400">Campus Safety Assistant</p>
             </div>
           </div>
           <Button
@@ -135,85 +221,132 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
             size="sm"
             onClick={onClose}
             className="text-gray-400 hover:text-white hover:bg-gray-800 rounded-full w-8 h-8 p-0"
-            aria-label="Close chatbot guide"
+            aria-label="Close Voice chatbot"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Body - Conversation Flow */}
-        <div 
-          id="voice-chatbot-description"
-          className="flex-1 overflow-y-auto p-6 space-y-4"
-        >
-          {conversationSteps.map((step, index) => (
-            <div 
-              key={index}
-              className={`flex space-x-3 p-4 rounded-lg ${
-                step.type === 'intro' ? 'bg-blue-900/20 border border-blue-500/30' :
-                step.type === 'step' ? 'bg-gray-800/50 border border-gray-600/30' :
-                step.type === 'warning' ? 'bg-red-900/20 border border-red-500/30' :
-                'bg-green-900/20 border border-green-500/30'
-              }`}
-            >
-              <div className="flex-shrink-0 mt-1">
-                {step.icon}
+        {/* Serious Actions Alert */}
+        {showSeriousActions && (
+          <div className="p-4 bg-red-900/20 border-b border-red-500/30 flex-shrink-0">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="w-5 h-5 text-red-400 mt-1 flex-shrink-0" />
+              <div>
+                <h3 className="text-red-300 font-semibold text-sm">Serious Actions Needed</h3>
+                <ul className="text-red-200 text-xs mt-1 space-y-1">
+                  <li>• Get to a safe place immediately</li>
+                  <li>• Call Police: 100 (Emergency)</li>
+                  <li>• Use our SOS feature to alert contacts</li>
+                </ul>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-white mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-300 leading-relaxed">{step.content}</p>
-                {step.type === 'step' && (
-                  <div className="mt-2 text-xs text-gray-500">
-                    Step {index} of {conversationSteps.filter(s => s.type === 'step').length}
-                  </div>
-                )}
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] p-3 rounded-lg text-sm ${
+                  message.type === 'user'
+                    ? 'bg-blue-600 text-white ml-4'
+                    : 'bg-gray-800 text-gray-200 mr-4'
+                }`}
+              >
+                <p className="whitespace-pre-wrap">{message.content}</p>
+                <p className="text-xs opacity-60 mt-1">
+                  {message.timestamp.toLocaleTimeString()}
+                </p>
               </div>
             </div>
           ))}
-
-          {/* Additional Tips */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg">
-            <h4 className="font-semibold text-purple-300 mb-2">💡 Pro Tips</h4>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>• Keep your emergency contacts updated</li>
-              <li>• Enable location services for accurate alerts</li>
-              <li>• Report incidents promptly to help others</li>
-              <li>• Check the crime map before going to new areas</li>
-            </ul>
-          </div>
+          
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-800 text-gray-200 max-w-[80%] p-3 rounded-lg mr-4">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  <span className="text-sm">Voice is thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer - Quick Actions */}
-        <div className="p-6 border-t border-gray-700 flex-shrink-0">
-          <div className="space-y-3">
-            <p className="text-sm text-gray-400 text-center mb-4">Quick actions to get started:</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
-              <Button
-                onClick={() => handleNavigation('/signup')}
-                className="bg-green-600 hover:bg-green-700 text-white w-full text-sm py-2"
-                aria-label="Open Sign Up page"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Sign Up
-              </Button>
-              <Button
-                onClick={() => handleNavigation('/signin')}
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full text-sm py-2"
-                aria-label="Open Sign In page"
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In
-              </Button>
-              <Button
-                onClick={() => handleNavigation('/dashboard')}
-                className="bg-red-600 hover:bg-red-700 text-white w-full text-sm py-2"
-                aria-label="Open Report page"
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Report
-              </Button>
+        {/* Quick Replies */}
+        {currentQuickReplies.length > 0 && (
+          <div className="p-4 border-t border-gray-700 flex-shrink-0">
+            <p className="text-xs text-gray-400 mb-2">Quick replies:</p>
+            <div className="flex flex-wrap gap-2">
+              {currentQuickReplies.map((reply, index) => (
+                <Button
+                  key={index}
+                  onClick={() => handleQuickReply(reply)}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                  disabled={isLoading}
+                >
+                  {reply}
+                </Button>
+              ))}
             </div>
           </div>
+        )}
+
+        {/* Action Buttons */}
+        {currentButtons.length > 0 && (
+          <div className="p-4 border-t border-gray-700 flex-shrink-0">
+            <p className="text-xs text-gray-400 mb-2">Actions:</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {currentButtons.map((button, index) => (
+                <Button
+                  key={index}
+                  onClick={() => handleButtonAction(button.action)}
+                  className={`text-sm py-2 ${
+                    button.action === 'call_help' ? 'bg-red-600 hover:bg-red-700' :
+                    button.action === 'open_signin' ? 'bg-blue-600 hover:bg-blue-700' :
+                    button.action === 'open_report' ? 'bg-green-600 hover:bg-green-700' :
+                    'bg-gray-600 hover:bg-gray-700'
+                  }`}
+                  disabled={isLoading}
+                >
+                  {button.action === 'call_help' && <Phone className="w-4 h-4 mr-2" />}
+                  {button.action === 'open_signin' && <LogIn className="w-4 h-4 mr-2" />}
+                  {button.action === 'open_report' && <AlertTriangle className="w-4 h-4 mr-2" />}
+                  {button.action === 'open_signup' && <UserPlus className="w-4 h-4 mr-2" />}
+                  {button.text}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="p-4 border-t border-gray-700 flex-shrink-0">
+          <form onSubmit={handleSubmit} className="flex space-x-2">
+            <Input
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              disabled={isLoading}
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !inputMessage.trim()}
+              className="bg-blue-600 hover:bg-blue-700 px-3"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
         </div>
       </DialogContent>
     </Dialog>
