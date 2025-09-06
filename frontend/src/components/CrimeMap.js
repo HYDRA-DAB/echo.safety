@@ -631,21 +631,6 @@ const CrimeMap = () => {
                 <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse transform -translate-x-1/2 -translate-y-1/2"></div>
               </Marker>
             )}
-
-            {/* Crime Details Popup - Category-specific content */}
-            {selectedCrime && (
-              <Popup
-                longitude={selectedCrime.location.lng}
-                latitude={selectedCrime.location.lat}
-                anchor="top"
-                onClose={() => setSelectedCrime(null)}
-                className="mapboxgl-popup"
-                closeButton={true}
-                closeOnClick={false}
-              >
-                {getCrimePopupContent(selectedCrime)}
-              </Popup>
-            )}
           </Map>
         </div>
 
