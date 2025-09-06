@@ -59,7 +59,6 @@ const CrimeMap = () => {
   const [crimes, setCrimes] = useState([]);
   const [hoveredCrime, setHoveredCrime] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
   const [locationPermission, setLocationPermission] = useState('unknown');
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
