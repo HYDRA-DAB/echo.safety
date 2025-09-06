@@ -90,7 +90,16 @@ const Dashboard = () => {
       
       const allCrimes = allCrimesResponse.data || [];
       setCrimes({ recent: recentCrimesData, all: allCrimes });
-      setPredictions(predictionsResponse.data.predictions || []);
+      
+      // Handle enhanced AI analysis response
+      const aiAnalysisData = predictionsResponse.data || {};
+      setAiAnalysis({
+        predictions: aiAnalysisData.predictions || [],
+        trend_analysis: aiAnalysisData.trend_analysis || null,
+        safety_tips: aiAnalysisData.safety_tips || [],
+        news_articles_analyzed: aiAnalysisData.news_articles_analyzed || 0,
+        last_updated: aiAnalysisData.last_updated || null
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
