@@ -116,13 +116,19 @@ const Dashboard = () => {
               headers: { Authorization: `Bearer ${token}` }
             });
             
-            toast.success(`SOS Alert sent! Emergency services notified.`);
+            // WhatsApp SOS Integration
+            const sosMessage = `🚨 EMERGENCY ALERT - ECHO 🚨\n\nUser: ${user?.name}\nSRM Roll: ${user?.srm_roll_number}\nTime: ${new Date().toLocaleString()}\nLocation: https://maps.google.com/maps?q=${latitude},${longitude}\n\nImmediate assistance required at SRM KTR Campus!\n\nThis is an automated emergency alert from Echo Safety System.`;
+            
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(sosMessage)}`;
+            window.open(whatsappUrl, '_blank');
+            
+            toast.success(`SOS Alert sent! WhatsApp emergency message ready to send.`);
           } catch (error) {
             toast.error('Failed to send SOS alert');
           }
         },
         (error) => {
-          toast.error('Unable to get location for SOS');
+          toast.error('Unable to get location for SOS. Please check location permissions.');
         }
       );
     } else {
