@@ -102,6 +102,57 @@ class CampusSafetyAPITester:
             self.log_test("User Signup", False, f"Status: {status}, Error: {error_msg}")
             return False
 
+    def test_user_signup_with_trusted_contacts(self):
+        """Test user registration with trusted contacts"""
+        print("\n🔍 Testing User Signup with Trusted Contacts...")
+        
+        # Create a new user with trusted contacts
+        test_email = f"test_trusted_{datetime.now().strftime('%H%M%S')}@srmist.edu.in"
+        test_roll = f"RA{datetime.now().strftime('%Y%m%d%H%M%S')}T"
+        
+        signup_data = {
+            "name": "Test User with Contacts",
+            "email": test_email,
+            "phone": "9876543210",
+            "srm_roll_number": test_roll,
+            "password": "TestPass123!",
+            "trusted_contact_1_name": "Emergency Contact 1",
+            "trusted_contact_1_phone": "9123456789",
+            "trusted_contact_2_name": "Emergency Contact 2", 
+            "trusted_contact_2_phone": "9987654321"
+        }
+        
+        response = self.make_request('POST', 'auth/signup', signup_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                if 'access_token' in data and 'user' in data:
+                    user = data['user']
+                    trusted_contacts = user.get('trusted_contacts', [])
+                    success = len(trusted_contacts) == 2
+                    if success:
+                        contact1 = trusted_contacts[0]
+                        contact2 = trusted_contacts[1]
+                        success = (contact1.get('name') == 'Emergency Contact 1' and 
+                                 contact1.get('phone') == '9123456789' and
+                                 contact2.get('name') == 'Emergency Contact 2' and
+                                 contact2.get('phone') == '9987654321')
+                    
+                    self.log_test("User Signup with Trusted Contacts", success, 
+                                f"Contacts saved: {len(trusted_contacts)}")
+                    return success
+                else:
+                    self.log_test("User Signup with Trusted Contacts", False, "Missing token or user data")
+                    return False
+            except Exception as e:
+                self.log_test("User Signup with Trusted Contacts", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("User Signup with Trusted Contacts", False, f"Status: {status}")
+            return False
+
     def test_user_login_email(self):
         """Test user login with email"""
         print("\n🔍 Testing User Login (Email)...")
