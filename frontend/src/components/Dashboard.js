@@ -312,12 +312,13 @@ const Dashboard = () => {
     );
   }
 
-  const recentCrimes = crimes.slice(0, 5);
+  const recentCrimes = crimes.recent || [];
+  const allCrimes = crimes.all || [];
   const crimeStats = {
-    total: crimes.length,
-    theft: crimes.filter(c => c.crime_type === 'theft').length,
-    women_safety: crimes.filter(c => c.crime_type === 'women_safety').length,
-    drugs: crimes.filter(c => c.crime_type === 'drugs').length
+    total: allCrimes.length,
+    theft: allCrimes.filter(c => c.crime_type === 'theft').length,
+    women_safety: allCrimes.filter(c => c.crime_type === 'women_safety').length,
+    drugs: allCrimes.filter(c => c.crime_type === 'drugs').length
   };
 
   return (
