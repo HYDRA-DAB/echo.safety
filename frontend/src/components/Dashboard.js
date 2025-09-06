@@ -92,11 +92,134 @@ const Dashboard = () => {
     }
   };
 
+  // Location selection methods
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by this browser');
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        try {
+          // Reverse geocode to get address
+          const address = await reverseGeocode(latitude, longitude);
+          setReportForm(prev => ({
+            ...prev,
+            location: {
+              lat: latitude,
+              lng: longitude,
+              address: address,
+              source: 'current'
+            }
+          }));
+          setLocationMethod('current');
+          toast.success('Current location captured');
+        } catch (error) {
+          setReportForm(prev => ({
+            ...prev,
+            location: {
+              lat: latitude,
+              lng: longitude,
+              address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+              source: 'current'
+            }
+          }));
+          setLocationMethod('current');
+          toast.success('Current location captured (address lookup failed)');
+        }
+        setLocationLoading(false);
+      },
+      (error) => {
+        setLocationLoading(false);
+        toast.error('Unable to get current location. Please check permissions.');
+      }
+    );
+  };
+
+  const reverseGeocode = async (lat, lng) => {
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoidGFubWF5eXl5eSIsImEiOiJjbWY0NHdkODgwMW10MmlzaDljNThmbjkzIn0.htjxLePu6Z7UXOKU3ltpIg';
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&types=address,poi`
+      );
+      const data = await response.json();
+      if (data.features && data.features.length > 0) {
+        return data.features[0].place_name;
+      }
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (error) {
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  };
+
+  const searchAddress = async () => {
+    if (!addressSearch.trim()) {
+      toast.error('Please enter an address to search');
+      return;
+    }
+
+    setLocationLoading(true);
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoidGFubWF5eXl5eSIsImEiOiJjbWY0NHdkODgwMW10MmlzaDljNThmbjkzIn0.htjxLePu6Z7UXOKU3ltpIg';
+    
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addressSearch)}.json?access_token=${MAPBOX_TOKEN}&proximity=80.0452,12.8236&types=address,poi`
+      );
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        const [lng, lat] = feature.center;
+        
+        setReportForm(prev => ({
+          ...prev,
+          location: {
+            lat: lat,
+            lng: lng,
+            address: feature.place_name,
+            source: 'search'
+          }
+        }));
+        setLocationMethod('search');
+        toast.success('Location found and set');
+      } else {
+        toast.error('Location not found. Please try a different address.');
+      }
+    } catch (error) {
+      toast.error('Failed to search location');
+    }
+    setLocationLoading(false);
+  };
+
+  const selectOnMap = () => {
+    toast.info('Map selection feature will be implemented in the next update');
+    // For now, set a default campus location
+    setReportForm(prev => ({
+      ...prev,
+      location: {
+        lat: 12.8236,
+        lng: 80.0452,
+        address: 'SRM KTR Campus (Selected on Map)',
+        source: 'map'
+      }
+    }));
+    setLocationMethod('map');
+  };
+
   const handleReportSubmit = async (e) => {
     e.preventDefault();
     
     if (!reportForm.title || !reportForm.description || !reportForm.crime_type || !reportForm.severity) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (!reportForm.location) {
+      toast.error('Please set a crime location using one of the available methods');
       return;
     }
 
@@ -112,10 +235,12 @@ const Dashboard = () => {
         title: '',
         description: '',
         crime_type: '',
-        location: { lat: 12.8233, lng: 80.0418, address: 'SRM KTR Campus' },
+        location: null,
         severity: '',
         is_anonymous: false
       });
+      setLocationMethod('');
+      setAddressSearch('');
       fetchDashboardData(); // Refresh data
     } catch (error) {
       console.error('Error submitting report:', error);
