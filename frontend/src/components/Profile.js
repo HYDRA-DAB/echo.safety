@@ -202,9 +202,46 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Personal Information */}
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Current Date & Time - Left Side */}
+            <div className="md:col-span-1">
+              <h2 className="text-xl font-semibold text-white mb-6">Current Date & Time</h2>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gradient-to-br from-red-600/20 to-pink-600/20 rounded-lg border border-red-500/30">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <Calendar className="w-6 h-6 text-red-400" />
+                    <div>
+                      <p className="text-red-200 text-sm font-medium">Today's Date (IST)</p>
+                      <p className="text-white font-bold text-lg">{currentDate}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-lg border border-blue-500/30">
+                  <div className="flex items-center space-x-3">
+                    <Clock className="w-6 h-6 text-blue-400" />
+                    <div>
+                      <p className="text-blue-200 text-sm font-medium">Current Time (IST)</p>
+                      <p className="text-white font-bold text-xl font-mono">{currentTime}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <User className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-gray-400 text-sm">Member Since</p>
+                      <p className="text-white font-medium">{formatDate(profile?.created_at)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Information - Center */}
+            <div className="md:col-span-1">
               <h2 className="text-xl font-semibold text-white mb-6">Personal Information</h2>
               
               <div className="space-y-4">
@@ -239,19 +276,11 @@ const Profile = () => {
                     <p className="text-white font-medium">{profile?.srm_roll_number}</p>
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg">
-                  <Calendar className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-gray-400 text-sm">Member Since</p>
-                    <p className="text-white font-medium">{formatDate(profile?.created_at)}</p>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Emergency Contacts */}
-            <div>
+            {/* Emergency Contacts - Right */}
+            <div className="md:col-span-1">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">Emergency Contacts</h2>
                 <Button 
