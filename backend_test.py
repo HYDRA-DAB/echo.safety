@@ -548,6 +548,9 @@ class CampusSafetyAPITester:
             self.test_user_login_email,
             self.test_user_login_roll,
             self.test_get_trusted_contacts,
+            self.test_get_user_profile,  # NEW
+            self.test_update_trusted_contacts,  # NEW
+            self.test_update_trusted_contacts_validation,  # NEW
             self.test_crime_report,
             self.test_get_crimes,
             self.test_get_recent_crimes,
