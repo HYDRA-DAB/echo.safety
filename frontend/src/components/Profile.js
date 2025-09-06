@@ -14,7 +14,8 @@ import {
   Save,
   X,
   LogOut,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
