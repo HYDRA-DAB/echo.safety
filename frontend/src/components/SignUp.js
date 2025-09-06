@@ -129,7 +129,7 @@ const SignUp = () => {
           <div className="flex justify-center">
             <div className="flex items-center space-x-2 mb-6">
               <Shield className="w-10 h-10 text-red-500 neon-glow-red" />
-              <span className="text-2xl font-bold">Campus Safety</span>
+              <span className="text-2xl font-bold text-white">Echo</span>
             </div>
           </div>
           
