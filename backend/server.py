@@ -316,6 +316,59 @@ async def get_sos_alerts():
 async def get_trusted_contacts(current_user: User = Depends(get_current_user)):
     return {"trusted_contacts": current_user.trusted_contacts}
 
+# Update user's trusted contacts
+@api_router.put("/user/trusted-contacts")
+async def update_trusted_contacts(
+    contacts_data: dict, 
+    current_user: User = Depends(get_current_user)
+):
+    # Validate and process the contacts data
+    trusted_contacts = []
+    
+    # Process contact 1
+    if contacts_data.get('contact1_name') and contacts_data.get('contact1_phone'):
+        contact1_phone = re.sub(r'\D', '', contacts_data['contact1_phone'])
+        if not re.match(r'^[6-9]\d{9}$', contact1_phone):
+            raise HTTPException(status_code=400, detail="Contact 1: Invalid phone number format")
+        trusted_contacts.append(TrustedContact(
+            name=contacts_data['contact1_name'].strip(),
+            phone=contact1_phone
+        ))
+    
+    # Process contact 2
+    if contacts_data.get('contact2_name') and contacts_data.get('contact2_phone'):
+        contact2_phone = re.sub(r'\D', '', contacts_data['contact2_phone'])
+        if not re.match(r'^[6-9]\d{9}$', contact2_phone):
+            raise HTTPException(status_code=400, detail="Contact 2: Invalid phone number format")
+        trusted_contacts.append(TrustedContact(
+            name=contacts_data['contact2_name'].strip(),
+            phone=contact2_phone
+        ))
+    
+    # Update user's trusted contacts in database
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"trusted_contacts": [contact.dict() for contact in trusted_contacts]}}
+    )
+    
+    return {
+        "message": "Trusted contacts updated successfully",
+        "trusted_contacts": [contact.dict() for contact in trusted_contacts]
+    }
+
+# Get user profile
+@api_router.get("/user/profile")
+async def get_user_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "srm_roll_number": current_user.srm_roll_number,
+        "trusted_contacts": current_user.trusted_contacts,
+        "created_at": current_user.created_at
+    }
+
 # AI Predictions routes
 @api_router.get("/ai/predictions")
 async def get_ai_predictions():
