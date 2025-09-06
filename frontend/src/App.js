@@ -106,6 +106,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/reports" 
+              element={
+                <ProtectedRoute>
+                  <ReportsPage />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </BrowserRouter>
         <Toaster />
