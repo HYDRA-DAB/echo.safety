@@ -539,9 +539,10 @@ const Dashboard = () => {
           <Card className="feature-card p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Recent Reports</h2>
-              <Link to="/map">
+              <Link to="/reports">
                 <Button size="sm" variant="ghost" className="text-red-400 hover:bg-red-900/20">
-                  View All
+                  <FileText className="w-4 h-4 mr-2" />
+                  View All Reports
                 </Button>
               </Link>
             </div>
