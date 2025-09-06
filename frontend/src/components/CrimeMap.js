@@ -399,6 +399,34 @@ const CrimeMap = () => {
 
         {showIncidentList && (
           <>
+            {/* Crime Statistics Display */}
+            <div className="p-4 border-b border-gray-700">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
+                <BarChart3 className="w-4 h-4 mr-2 text-red-500" />
+                Crime Statistics
+              </h3>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-2">
+                  <div className="text-red-400 font-bold text-lg">
+                    {crimes.filter(c => c.crime_type === 'theft').length}
+                  </div>
+                  <div className="text-red-300 text-xs">Theft</div>
+                </div>
+                <div className="bg-pink-900/20 border border-pink-500/30 rounded-lg p-2">
+                  <div className="text-pink-400 font-bold text-lg">
+                    {crimes.filter(c => c.crime_type === 'women_safety').length}
+                  </div>
+                  <div className="text-pink-300 text-xs">Women's<br/>Safety</div>
+                </div>
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-2">
+                  <div className="text-blue-400 font-bold text-lg">
+                    {crimes.filter(c => c.crime_type === 'drugs').length}
+                  </div>
+                  <div className="text-blue-300 text-xs">Drugs</div>
+                </div>
+              </div>
+            </div>
+
             {/* Filter Controls */}
             <div className="p-4 border-b border-gray-700">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
