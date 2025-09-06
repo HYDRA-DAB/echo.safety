@@ -255,20 +255,48 @@ const Dashboard = () => {
           const { latitude, longitude } = position.coords;
           try {
             const token = localStorage.getItem('token');
+            
+            // Create SOS alert with location
+            const locationData = {
+              lat: latitude,
+              lng: longitude,
+              address: 'Current Location',
+              source: 'current'
+            };
+
             await axios.post(`${API}/sos/alert`, {
-              location: { lat: latitude, lng: longitude, address: 'Current Location' },
+              location: locationData,
               emergency_type: 'general'
             }, {
               headers: { Authorization: `Bearer ${token}` }
             });
             
-            // WhatsApp SOS Integration
+            // Get user's trusted contacts
+            const contactsResponse = await axios.get(`${API}/user/trusted-contacts`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const trustedContacts = contactsResponse.data.trusted_contacts || [];
+            
+            // WhatsApp SOS Integration with trusted contacts
             const sosMessage = `🚨 EMERGENCY ALERT - ECHO 🚨\n\nUser: ${user?.name}\nSRM Roll: ${user?.srm_roll_number}\nTime: ${new Date().toLocaleString()}\nLocation: https://maps.google.com/maps?q=${latitude},${longitude}\n\nImmediate assistance required at SRM KTR Campus!\n\nThis is an automated emergency alert from Echo Safety System.`;
             
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(sosMessage)}`;
-            window.open(whatsappUrl, '_blank');
-            
-            toast.success(`SOS Alert sent! WhatsApp emergency message ready to send.`);
+            if (trustedContacts.length > 0) {
+              // Send to each trusted contact
+              trustedContacts.forEach((contact, index) => {
+                setTimeout(() => {
+                  const contactMessage = `${sosMessage}\n\nSent to: ${contact.name}`;
+                  const whatsappUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(contactMessage)}`;
+                  window.open(whatsappUrl, '_blank');
+                }, index * 1000); // Delay each message by 1 second
+              });
+              toast.success(`SOS Alert sent to ${trustedContacts.length} trusted contact(s)!`);
+            } else {
+              // Fallback to general WhatsApp sharing
+              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(sosMessage)}`;
+              window.open(whatsappUrl, '_blank');
+              toast.success(`SOS Alert ready to send via WhatsApp!`);
+            }
           } catch (error) {
             toast.error('Failed to send SOS alert');
           }
