@@ -390,6 +390,118 @@ class CampusSafetyAPITester:
             self.log_test("Get Trusted Contacts", False, f"Status: {status}")
             return False
 
+    def test_get_user_profile(self):
+        """Test getting user profile - NEW FEATURE"""
+        print("\n🔍 Testing Get User Profile (NEW)...")
+        
+        if not self.token:
+            self.log_test("Get User Profile", False, "No authentication token")
+            return False
+        
+        response = self.make_request('GET', 'user/profile', auth_required=True)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                required_fields = ['id', 'name', 'email', 'phone', 'srm_roll_number', 'trusted_contacts', 'created_at']
+                success = all(field in data for field in required_fields)
+                
+                if success:
+                    # Verify data matches our test user
+                    success = (data.get('email') == self.test_user_email and 
+                             data.get('srm_roll_number') == self.test_roll_number)
+                
+                self.log_test("Get User Profile", success, 
+                            f"Profile for: {data.get('name', 'Unknown')}")
+                return success
+            except Exception as e:
+                self.log_test("Get User Profile", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Get User Profile", False, f"Status: {status}")
+            return False
+
+    def test_update_trusted_contacts(self):
+        """Test updating user's trusted contacts - NEW FEATURE"""
+        print("\n🔍 Testing Update Trusted Contacts (NEW)...")
+        
+        if not self.token:
+            self.log_test("Update Trusted Contacts", False, "No authentication token")
+            return False
+        
+        # Test updating contacts
+        update_data = {
+            "contact1_name": "Updated Contact 1",
+            "contact1_phone": "9111111111",
+            "contact2_name": "Updated Contact 2", 
+            "contact2_phone": "9222222222"
+        }
+        
+        response = self.make_request('PUT', 'user/trusted-contacts', update_data, auth_required=True)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                success = ('message' in data and 
+                          'trusted_contacts' in data and
+                          len(data['trusted_contacts']) == 2)
+                
+                if success:
+                    contacts = data['trusted_contacts']
+                    contact1 = contacts[0]
+                    contact2 = contacts[1]
+                    success = (contact1.get('name') == 'Updated Contact 1' and
+                             contact1.get('phone') == '9111111111' and
+                             contact2.get('name') == 'Updated Contact 2' and
+                             contact2.get('phone') == '9222222222')
+                
+                self.log_test("Update Trusted Contacts", success, 
+                            f"Updated {len(data.get('trusted_contacts', []))} contacts")
+                return success
+            except Exception as e:
+                self.log_test("Update Trusted Contacts", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Update Trusted Contacts", False, f"Status: {status}")
+            return False
+
+    def test_update_trusted_contacts_validation(self):
+        """Test phone validation in trusted contacts update - NEW FEATURE"""
+        print("\n🔍 Testing Trusted Contacts Phone Validation (NEW)...")
+        
+        if not self.token:
+            self.log_test("Trusted Contacts Validation", False, "No authentication token")
+            return False
+        
+        # Test with invalid phone number
+        invalid_data = {
+            "contact1_name": "Invalid Contact",
+            "contact1_phone": "123456789",  # Invalid - doesn't start with 6-9
+            "contact2_name": "Valid Contact",
+            "contact2_phone": "9876543210"
+        }
+        
+        response = self.make_request('PUT', 'user/trusted-contacts', invalid_data, auth_required=True)
+        
+        # Should return 400 for invalid phone
+        if response and response.status_code == 400:
+            try:
+                data = response.json()
+                success = 'detail' in data and 'Invalid phone number' in data['detail']
+                self.log_test("Trusted Contacts Validation", success, 
+                            f"Correctly rejected invalid phone: {data.get('detail', '')}")
+                return success
+            except Exception as e:
+                self.log_test("Trusted Contacts Validation", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Trusted Contacts Validation", False, 
+                        f"Expected 400 for invalid phone, got: {status}")
+            return False
+
     def test_ai_predictions(self):
         """Test AI predictions endpoint"""
         print("\n🔍 Testing AI Predictions...")
