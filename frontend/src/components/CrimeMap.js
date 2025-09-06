@@ -325,6 +325,11 @@ const CrimeMap = () => {
           
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-300">Welcome, {user?.name}</span>
+            <Link to="/profile">
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:bg-gray-700">
+                <User className="w-4 h-4" />
+              </Button>
+            </Link>
             <Button onClick={handleLogout} variant="ghost" size="sm" className="text-red-400 hover:bg-red-900/20">
               <LogOut className="w-4 h-4" />
             </Button>
