@@ -75,12 +75,14 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [crimesResponse, predictionsResponse] = await Promise.all([
+      const [recentCrimesData, allCrimesResponse, predictionsResponse] = await Promise.all([
+        fetchRecentCrimes(),
         axios.get(`${API}/crimes`, { headers }),
         axios.get(`${API}/ai/predictions`)
       ]);
       
-      setCrimes(crimesResponse.data || []);
+      const allCrimes = allCrimesResponse.data || [];
+      setCrimes({ recent: recentCrimesData, all: allCrimes });
       setPredictions(predictionsResponse.data.predictions || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
