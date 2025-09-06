@@ -8,6 +8,7 @@ import SignUp from "./components/SignUp";
 import CrimeMap from "./components/CrimeMap";
 import Dashboard from "./components/Dashboard";
 import SafetyTips from "./components/SafetyTips";
+import ReportsPage from "./components/ReportsPage";
 import { Toaster } from "./components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
