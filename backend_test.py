@@ -910,7 +910,14 @@ class CampusSafetyAPITester:
             self.test_get_map_data,
             self.test_sos_alert,
             self.test_get_sos_alerts,
-            self.test_ai_predictions
+            # AI Crime Prediction Tests - NEW COMPREHENSIVE SUITE
+            self.test_ai_predictions,
+            self.test_ai_news_articles,
+            self.test_ai_refresh_analysis_without_auth,
+            self.test_ai_refresh_analysis_with_auth,
+            self.test_ai_predictions_fallback_behavior,
+            self.test_ai_crime_filtering_accuracy,
+            self.test_ai_response_format_validation
         ]
         
         for test in tests:
