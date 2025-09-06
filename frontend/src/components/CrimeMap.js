@@ -238,33 +238,6 @@ const CrimeMap = () => {
     }
   };
 
-  // Category-specific popup content (show only title)
-  const getCrimePopupContent = (crime) => {
-    return (
-      <div className="p-3 min-w-64">
-        <div className="flex items-center justify-between mb-2">
-          <Badge 
-            className="text-xs text-white"
-            style={{ backgroundColor: getCrimeColor(crime.crime_type) }}
-          >
-            {getCrimeBadgeText(crime.crime_type)}
-          </Badge>
-          <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
-            {crime.severity.toUpperCase()}
-          </Badge>
-        </div>
-        
-        {/* Only show title for category-specific popups */}
-        <h4 className="font-semibold text-gray-900 mb-2">{crime.title}</h4>
-        
-        <div className="flex items-center text-xs text-gray-500">
-          <Calendar className="w-3 h-3 mr-1" />
-          {formatToIST(crime.created_at)}
-        </div>
-      </div>
-    );
-  };
-
   const heatmapLayer = {
     id: 'crimes-heat',
     type: 'heatmap',
