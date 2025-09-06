@@ -120,12 +120,33 @@ const Profile = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-IN', { 
+      timeZone: 'Asia/Kolkata',
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
     });
   };
+
+  const getCurrentDateTimeIST = () => {
+    const now = new Date();
+    const date = now.toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const time = now.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    return { date, time };
+  };
+
+  const { date: currentDate, time: currentTime } = getCurrentDateTimeIST();
 
   if (loading) {
     return (
