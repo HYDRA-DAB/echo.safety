@@ -228,22 +228,20 @@ const LandingPage = () => {
             <div>
               <h3 className="text-xl font-bold mb-6 text-red-400">Quick Links</h3>
               <div className="space-y-3">
-                <Link to="/about" className="flex items-center text-gray-300 hover:text-white">
+                <button 
+                  onClick={() => setShowAboutDialog(true)}
+                  className="flex items-center text-gray-300 hover:text-white cursor-pointer"
+                >
                   <ChevronRight className="w-4 h-4 mr-2" />
                   About Echo
-                </Link>
-                <Link to="/safety-tips" className="flex items-center text-gray-300 hover:text-white">
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Safety Tips
-                </Link>
-                <Link to="/contact" className="flex items-center text-gray-300 hover:text-white">
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Contact
-                </Link>
-                <Link to="/support" className="flex items-center text-gray-300 hover:text-white">
+                </button>
+                <button 
+                  onClick={() => setShowSupportDialog(true)}
+                  className="flex items-center text-gray-300 hover:text-white cursor-pointer"
+                >
                   <ChevronRight className="w-4 h-4 mr-2" />
                   Support
-                </Link>
+                </button>
               </div>
             </div>
             
