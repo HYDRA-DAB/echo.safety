@@ -103,12 +103,14 @@ const ReportsPage = () => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return {
-      date: date.toLocaleDateString('en-US', { 
+      date: date.toLocaleDateString('en-IN', { 
+        timeZone: 'Asia/Kolkata',
         year: 'numeric', 
         month: 'short', 
         day: 'numeric' 
       }),
-      time: date.toLocaleTimeString('en-US', { 
+      time: date.toLocaleTimeString('en-IN', { 
+        timeZone: 'Asia/Kolkata',
         hour: '2-digit', 
         minute: '2-digit' 
       })
