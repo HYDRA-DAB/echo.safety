@@ -236,9 +236,6 @@ const ReportsPage = () => {
                         >
                           {report.severity.toUpperCase()} PRIORITY
                         </Badge>
-                        <Badge variant="outline" className="border-gray-600 text-gray-300">
-                          {report.status.toUpperCase()}
-                        </Badge>
                       </div>
 
                       {/* Title and Description */}
