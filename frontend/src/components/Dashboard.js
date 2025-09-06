@@ -178,7 +178,7 @@ const Dashboard = () => {
               <Link to="/">
                 <div className="flex items-center space-x-2">
                   <Shield className="w-8 h-8 text-red-500" />
-                  <span className="text-xl font-bold">Campus Safety</span>
+                  <span className="text-xl font-bold text-white">Echo</span>
                 </div>
               </Link>
             </div>
