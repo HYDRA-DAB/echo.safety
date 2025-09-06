@@ -402,20 +402,36 @@ const Dashboard = () => {
             <div className="space-y-4">
               {recentCrimes.length > 0 ? recentCrimes.map((crime, index) => (
                 <div key={index} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-3">
                     <Badge className={getCrimeColor(crime.crime_type)}>
                       {crime.crime_type.replace('_', ' ').toUpperCase()}
                     </Badge>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-300">
                       {crime.severity.toUpperCase()}
                     </Badge>
                   </div>
                   
-                  <p className="text-white text-sm font-medium mb-2">{crime.title}</p>
+                  <h4 className="text-white text-base font-semibold mb-2">{crime.title}</h4>
                   
-                  <div className="flex items-center text-xs text-gray-400">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {formatDate(crime.created_at)}
+                  {crime.description && (
+                    <div className="mb-3">
+                      <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {crime.description}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-700">
+                    <div className="flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formatDate(crime.created_at)}
+                    </div>
+                    {crime.location && crime.location.address && (
+                      <div className="flex items-center">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        <span className="truncate max-w-32">{crime.location.address}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )) : (
