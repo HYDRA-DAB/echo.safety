@@ -11,6 +11,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const VoiceChatbotModal = ({ isOpen, onClose, widgetPosition = { x: 24, y: 24 } }) => {
+  console.log('VoiceChatbotModal rendered with isOpen:', isOpen);
   const navigate = useNavigate();
   const modalRef = useRef(null);
   const messagesEndRef = useRef(null);
