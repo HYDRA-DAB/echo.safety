@@ -843,7 +843,7 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
         if intent == "theft_report":
             quick_buttons = [
                 {"text": "Report Incident", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Open Report Incident page?"},
-                {"text": "View Map", "action": "confirm_navigate", "value": "/crime-map", "confirm_message": "Check crime locations on map?"},
+                {"text": "View Map", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Check crime locations on map?"},
                 {"text": "Call Security", "action": "call", "value": "security"}
             ]
         elif intent == "harassment_report":
