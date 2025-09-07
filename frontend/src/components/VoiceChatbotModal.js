@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Send, Phone, AlertTriangle, Shield, Map, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent } from './ui/dialog.jsx';
 import { toast } from 'sonner';
 import axios from 'axios';
 
