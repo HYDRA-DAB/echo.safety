@@ -444,7 +444,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Link to="/crime-map">
+          <Link to="/map">
             <Card 
               id="map-section"
               className={`feature-card p-6 cursor-pointer hover:neon-glow-red ${
