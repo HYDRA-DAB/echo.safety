@@ -861,6 +861,10 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
             quick_buttons = [
                 {"text": "Report Incident", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Open report form?"}
             ]
+        elif intent == "sos_help":
+            quick_buttons = [
+                {"text": "SOS/Helplines", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Access SOS and helpline numbers?"}
+            ]
         elif intent == "account_help":
             quick_buttons = [
                 {"text": "Sign Up", "action": "navigate", "value": "/signup"},
@@ -871,12 +875,7 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
                 {"text": "Sign In", "action": "navigate", "value": "/signin"},
                 {"text": "Reset Password", "action": "navigate", "value": "/forgot-password"}
             ]
-        else:
-            # General help buttons
-            quick_buttons = [
-                {"text": "Report Issue", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Report an incident?"},
-                {"text": "View Map", "action": "confirm_navigate", "value": "/crime-map", "confirm_message": "Check safety map?"}
-            ]
+        # NOTE: Removed general help buttons - action buttons now only appear when contextually appropriate
         
         # Generate safety tip based on language and context
         if language == "tamil_english":
