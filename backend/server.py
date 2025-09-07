@@ -203,18 +203,18 @@ class AIAnalysisResponse(BaseModel):
 # Voice Chatbot Models
 class VoiceChatMessage(BaseModel):
     message: str
-    incident_type: Optional[str] = None  # "theft", "harassment", "drug_abuse", "other"
-    priority_level: Optional[str] = None  # "low", "medium", "high"
-    conversation_stage: Optional[str] = "initial"  # "initial", "incident_type", "priority", "actions", "signin_help"
+    language_preference: Optional[str] = None  # "english", "tamil_english"
+    conversation_context: Optional[Dict[str, Any]] = {}
     session_id: Optional[str] = None
 
 class VoiceChatResponse(BaseModel):
     response: str
-    quick_replies: List[str] = []
-    buttons: List[Dict[str, str]] = []  # {"text": "Button Text", "action": "action_type"}
-    conversation_stage: str
-    show_serious_actions: bool = False
+    quick_buttons: List[Dict[str, str]] = []  # {"text": "Button Text", "action": "action_type"}
+    language_used: str
+    intent_detected: Optional[str] = None
+    safety_tip: Optional[str] = None
     session_id: str
+    conversation_context: Dict[str, Any] = {}
 
 # Authentication helpers
 def verify_password(plain_password: str, hashed_password: str) -> bool:
