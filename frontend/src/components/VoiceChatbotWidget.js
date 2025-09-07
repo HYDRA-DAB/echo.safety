@@ -105,7 +105,7 @@ const VoiceChatbotWidget = () => {
   const updatePosition = (clientX, clientY) => {
     const newPosition = {
       x: clientX - dragOffset.x,
-      y: clientY - dragOffset.y
+      y: window.innerHeight - (clientY - dragOffset.y) - widgetSize.height // Convert to bottom-left coordinates
     };
     setPosition(validatePosition(newPosition));
   };
