@@ -859,7 +859,7 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
             ]
         elif intent == "map_help":
             quick_buttons = [
-                {"text": "View Map", "action": "confirm_navigate", "value": "/crime-map", "confirm_message": "Open crime map?"}
+                {"text": "View Map", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Open crime map?"}
             ]
         elif intent == "report_help":
             quick_buttons = [
