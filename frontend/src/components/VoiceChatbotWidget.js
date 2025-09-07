@@ -86,7 +86,6 @@ const VoiceChatbotWidget = () => {
     
     // Only start dragging if moved beyond threshold
     if (distance > dragThreshold && !isDragging) {
-      console.log('Starting drag due to movement');
       startDrag(mouseDownPos.x, mouseDownPos.y);
     }
     
