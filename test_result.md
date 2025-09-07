@@ -121,10 +121,10 @@ backend:
         - comment: "COMPREHENSIVE TESTING COMPLETED ✅ All AI Crime Prediction endpoints working correctly: 1) /api/ai/predictions - Enhanced predictions with real NewsAPI integration, LLM analysis, trend analysis, safety tips (tested with both real data and fallback scenarios). 2) /api/ai/news-articles - News articles endpoint returning proper structure and cached articles. 3) /api/ai/refresh-analysis - Authentication-protected refresh endpoint working correctly (properly rejects unauthorized requests, accepts authenticated requests). 4) Fallback mechanisms working perfectly - system gracefully handles NewsAPI rate limits/unavailability by using mock data while maintaining full functionality. 5) Crime content filtering algorithm working accurately. 6) Response formats match enhanced models exactly. 7) MongoDB caching and storage working. 8) LLM integration with Emergent API working correctly for trend analysis and prediction generation. System demonstrates robust operation with both real external API data and intelligent fallbacks. All critical test scenarios passed successfully."
   - task: "Voice Chatbot Backend - LLM Integration"
     implemented: true
-    working: true
+    working: false
     file: "server.py"
-    stuck_count: 0
-    priority: "medium"
+    stuck_count: 1
+    priority: "high"
     needs_retesting: false
     status_history:
         - working: "NA"
@@ -133,6 +133,9 @@ backend:
         - working: true
         - agent: "testing"
         - comment: "COMPREHENSIVE TESTING COMPLETED ✅ Voice Chatbot Backend (/api/voice) working correctly: 1) Initial conversation flow - Language selection prompt with proper quick buttons for English/Tamil-English options working perfectly. 2) Language preference handling - Both English and Tamil-English (Tanglish) language modes working with appropriate response styles and context persistence. 3) Session management - Session ID generation, context persistence across conversations, and interaction tracking all functional. 4) Intent detection - Emergency intent detection working correctly, general intents handled appropriately with relevant quick buttons and responses. 5) Quick buttons generation - App-aware navigation actions (confirm_navigate to /dashboard, /crime-map) with proper button structure (text, action, value fields) working correctly. 6) Safety tips generation - Contextual safety tips with emojis and helpful content generated for each interaction. 7) LLM integration - Emergent LLM API integration working correctly for generating contextual responses in both languages. 8) Error handling - Proper validation with 422 status for missing required fields. 9) Fallback behavior - System handles edge cases gracefully with appropriate emergency contact information. Minor: Intent detection for specific theft scenarios returns 'general' instead of 'theft_report' but still provides correct quick buttons and responses, not affecting core functionality. All critical test scenarios passed successfully."
+        - working: false
+        - agent: "testing"
+        - comment: "ENHANCED ACTION BUTTON LOGIC TESTING FAILED ❌ Critical issues found in improved intent detection logic: 1) OVERLAPPING INTENT DETECTION - Emergency intent detection is too broad, catching 'help' keyword in general conversations like 'Thank you for your help' (should be general intent with no buttons, but gets emergency intent with Call 100/SOS Alert buttons). 2) SOS/HELPLINES INTENT CONFLICTS - Messages like 'I need helplines' and 'Need emergency numbers' incorrectly trigger emergency intent instead of sos_help intent due to 'help'/'emergency' keywords being checked before 'helplines'/'emergency numbers' patterns. 3) INTENT PRIORITY ORDER ISSUE - The if-elif chain in lines 804-822 of server.py has emergency intent (line 808) checked before sos_help intent (line 815), causing keyword conflicts. SPECIFIC FAILURES: 'Thank you for your help' → emergency (should be general), 'I need helplines' → emergency (should be sos_help), 'Need emergency numbers' → emergency (should be sos_help). WORKING CORRECTLY: Report-specific requests properly show Report Incident buttons, Map-specific requests properly show View Map buttons, Pure SOS messages work correctly. IMPACT: Action buttons appear inappropriately in general conversations, breaking the enhanced contextual logic requirement."
 
 frontend:
   - task: "AI Crime Prediction - Frontend Integration"
