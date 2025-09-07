@@ -111,7 +111,6 @@ const VoiceChatbotWidget = () => {
   };
 
   const handleMouseUp = () => {
-    console.log('Mouse up on voice widget, isDragging:', isDragging);
     setMouseDownPos(null);
     if (isDragging) {
       setIsDragging(false);
