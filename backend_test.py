@@ -1778,7 +1778,13 @@ class CampusSafetyAPITester:
             self.test_voice_chatbot_invalid_request_handling,
             self.test_voice_chatbot_fallback_behavior,
             self.test_voice_chatbot_quick_buttons_structure,
-            self.test_voice_chatbot_safety_tips
+            self.test_voice_chatbot_safety_tips,
+            # NEW: Enhanced Action Button Logic Tests (Focus of this review)
+            self.test_voice_chatbot_general_conversation_no_buttons,
+            self.test_voice_chatbot_report_specific_buttons,
+            self.test_voice_chatbot_map_specific_buttons,
+            self.test_voice_chatbot_sos_specific_buttons,
+            self.test_voice_chatbot_enhanced_intent_detection
         ]
         
         for test in tests:
