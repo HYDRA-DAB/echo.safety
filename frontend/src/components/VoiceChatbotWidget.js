@@ -55,7 +55,6 @@ const VoiceChatbotWidget = () => {
 
   const handleMouseDown = (e) => {
     if (e.button !== 0) return; // Only left mouse button
-    console.log('Mouse down on voice widget');
     setMouseDownPos({ x: e.clientX, y: e.clientY });
     // Don't prevent default or start drag immediately
   };
