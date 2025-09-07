@@ -23,22 +23,6 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const VoiceChatbotModal = ({ isOpen, onClose, widgetPosition = { x: 24, y: 24 } }) => {
-  const navigate = useNavigate();
-  const modalRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  
-  // Chat state
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
-  const [conversationContext, setConversationContext] = useState({});
-  const [languagePreference, setLanguagePreference] = useState(null);
-  const [currentQuickButtons, setCurrentQuickButtons] = useState([]);
-  const [showSafetyTip, setShowSafetyTip] = useState(null);
-  const [pendingAction, setPendingAction] = useState(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Calculate modal position relative to widget
   const getModalPosition = () => {
