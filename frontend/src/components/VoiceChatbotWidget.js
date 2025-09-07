@@ -133,13 +133,8 @@ const VoiceChatbotWidget = () => {
   };
 
   const handleClick = () => {
-    console.log('Voice widget clicked! isDraggingRef.current:', isDraggingRef.current);
     // Don't open modal if we just finished dragging
-    if (isDraggingRef.current) {
-      console.log('Click ignored due to dragging');
-      return;
-    }
-    console.log('Setting modal open to true');
+    if (isDraggingRef.current) return;
     setIsModalOpen(true);
   };
 
