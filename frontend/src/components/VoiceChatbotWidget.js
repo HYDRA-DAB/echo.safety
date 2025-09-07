@@ -113,11 +113,15 @@ const VoiceChatbotWidget = () => {
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
-    // Delay to prevent click event from firing
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 100);
+    console.log('Mouse up on voice widget, isDragging:', isDragging);
+    setMouseDownPos(null);
+    if (isDragging) {
+      setIsDragging(false);
+      // Delay to prevent click event from firing after drag
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 100);
+    }
   };
 
   const handleTouchEnd = () => {
