@@ -953,7 +953,14 @@ const Dashboard = () => {
         </div>
 
         {/* Emergency Helplines */}
-        <Card className="feature-card p-6 mt-8">
+        <Card 
+          id="helplines-section"
+          className={`feature-card p-6 mt-8 ${
+            highlightSection === 'helplines' || highlightSection === 'sos' 
+              ? 'highlight-sos' 
+              : ''
+          }`}
+        >
           <h2 className="text-xl font-bold text-white mb-4 flex items-center">
             <Phone className="w-6 h-6 text-red-500 mr-2" />
             Emergency Helplines
