@@ -83,6 +83,9 @@ const Dashboard = () => {
         } else if (highlight === 'sos' || highlight === 'helplines') {
           const sosElement = document.getElementById('sos-section') || document.getElementById('helplines-section');
           sosElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (highlight === 'map') {
+          const mapElement = document.getElementById('map-section');
+          mapElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 100);
 
