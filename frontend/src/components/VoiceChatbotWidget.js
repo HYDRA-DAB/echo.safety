@@ -145,20 +145,16 @@ const VoiceChatbotWidget = () => {
 
   // Add global event listeners for drag
   useEffect(() => {
-    if (isDragging) {
+    if (mouseDownPos) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
       
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, dragOffset]);
+  }, [mouseDownPos, isDragging, dragOffset]);
 
   // Update position on window resize
   useEffect(() => {
