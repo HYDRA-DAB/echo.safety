@@ -262,6 +262,13 @@ const VoiceChatbotModal = ({ isOpen, onClose, widgetPosition = { x: 24, y: 24 } 
       <DialogContent 
         ref={modalRef}
         className="bg-gray-900 border border-purple-500/30 text-white w-full max-w-md mx-4 h-[85vh] max-h-[600px] overflow-hidden flex flex-col rounded-2xl shadow-2xl"
+        style={{
+          position: 'fixed',
+          left: `${modalPosition.left}px`,
+          top: `${modalPosition.top}px`,
+          margin: 0,
+          transform: 'none'
+        }}
         aria-labelledby="voice-chatbot-title"
         onPointerDownOutside={onClose}
         onEscapeKeyDown={onClose}
