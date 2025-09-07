@@ -67,6 +67,37 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Handle highlighting from URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const highlight = searchParams.get('highlight');
+    
+    if (highlight) {
+      setHighlightSection(highlight);
+      
+      // Auto-scroll to highlighted section
+      setTimeout(() => {
+        if (highlight === 'report' || highlight === 'report-incident') {
+          const reportElement = document.getElementById('report-incident-section');
+          reportElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (highlight === 'sos' || highlight === 'helplines') {
+          const sosElement = document.getElementById('sos-section') || document.getElementById('helplines-section');
+          sosElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      // Remove highlight after 3 seconds
+      const timer = setTimeout(() => {
+        setHighlightSection(null);
+        // Clean URL without refreshing
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [location.search]);
+
   // Use recent crimes API instead of all crimes
   const fetchRecentCrimes = async () => {
     try {
