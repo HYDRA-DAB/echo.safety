@@ -717,62 +717,115 @@ async def refresh_ai_analysis(background_tasks: BackgroundTasks, current_user: U
 # Voice Chatbot Routes
 @api_router.post("/voice", response_model=VoiceChatResponse)
 async def voice_chat(chat_message: VoiceChatMessage):
-    """Interactive voice chatbot powered by Emergent LLM (ChatGPT)"""
+    """Adaptive, bilingual voice chatbot powered by Emergent LLM"""
     
     try:
         # Generate session ID if not provided
         if not chat_message.session_id:
             chat_message.session_id = f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
         
-        # System prompt for Voice chatbot
-        system_prompt = """You are Voice, the Echo beginner guide for campus safety. You help users with signup, signin, crime reporting, and safety steps.
-
-IMPORTANT RULES:
-1. Ask ONE question at a time only
-2. Never perform actions - only provide guidance
-3. Keep responses concise and helpful
-4. Always end serious safety responses with: "If life is in danger, call police now. I can't call for you, but our site offers one-click helpline access."
-
-CONVERSATION FLOW:
-- Start by asking what happened (if not provided)
-- Then ask about priority level (if not provided)
-- High priority → Show serious safety actions
-- Low/Medium → Show reporting guidance
-- Offer signin help if needed
-
-Your role is to guide users through Echo's safety features step by step."""
-
-        # Determine conversation stage and generate appropriate response
-        stage = chat_message.conversation_stage or "initial"
+        # Get conversation context
+        context = chat_message.conversation_context or {}
+        language = chat_message.language_preference or context.get('language', None)
         
-        # Create context for the LLM based on current stage and user input
-        context_messages = []
+        # Language selection flow
+        if not language and not context.get('language_asked'):
+            return VoiceChatResponse(
+                response="Hi! I'm Voice, your campus safety assistant. I'm here to help you stay safe at Echo. Which language are you comfortable with?",
+                quick_buttons=[
+                    {"text": "English", "action": "select_language", "value": "english"},
+                    {"text": "Tamil-English", "action": "select_language", "value": "tamil_english"}
+                ],
+                language_used="english",
+                session_id=chat_message.session_id,
+                conversation_context={"language_asked": True}
+            )
         
-        if stage == "initial":
-            context_messages.append(f"User message: {chat_message.message}")
-            context_messages.append("This is the first interaction. Ask what happened or what type of incident they need help with.")
-        
-        elif stage == "incident_type":
-            context_messages.append(f"User reported incident type: {chat_message.incident_type}")
-            context_messages.append("Now ask about the priority level: Low, Medium, or High.")
-        
-        elif stage == "priority":
-            context_messages.append(f"Incident: {chat_message.incident_type}, Priority: {chat_message.priority_level}")
-            if chat_message.priority_level == "high":
-                context_messages.append("This is HIGH priority. Provide serious safety actions guidance immediately and end with the emergency disclaimer.")
+        # Set language preference
+        if not language and "select_language" in chat_message.message.lower():
+            if "tamil" in chat_message.message.lower():
+                language = "tamil_english"
             else:
-                context_messages.append("This is Low/Medium priority. Provide reporting guidance and steps.")
+                language = "english"
+            context['language'] = language
         
-        elif stage == "actions":
-            context_messages.append(f"User needs help with: {chat_message.message}")
-            context_messages.append("Provide specific guidance for their situation.")
+        # Default to English if still no language set
+        if not language:
+            language = "english"
+            context['language'] = language
         
-        elif stage == "signin_help":
-            context_messages.append(f"User asking about signin: {chat_message.message}")
-            context_messages.append("Provide signin/signup guidance.")
+        # Enhanced system prompt for adaptive, bilingual responses
+        if language == "tamil_english":
+            system_prompt = """You are Voice, Echo's campus safety assistant. You speak in friendly Tanglish style (mix Tamil words in English letters, casual and natural).
+
+LANGUAGE STYLE:
+- Use Tamil words written in English letters naturally mixed with English
+- Examples: "Enna problem bro?", "Naan help pannuren", "safe area ku poganum", "police ku call pannunga"
+- Be casual, friendly, and supportive
+- Use "da", "bro", "anna", "thangachi" appropriately
+
+CORE RULES:
+1. Analyze user's free text and understand their intent
+2. Respond naturally, short, and supportive - no scripts
+3. Guide step by step based on what they need
+4. Always ask for confirmation before suggesting actions
+5. End conversations with 1-2 safety tips in Tanglish
+6. Be adaptive - understand context from their message
+
+INTENTS TO DETECT:
+- Incident reporting (theft, harassment, safety issues)
+- Emergency situations (immediate danger)
+- Account help (signup, signin, password reset)
+- Echo features (SOS, map, reports)
+- General safety guidance
+
+EMERGENCY DISCLAIMER: For serious situations, always say "Emergency na police ku call pannunga da - 100. Naan call panna mudiyathu but site la helpline access irukku."
+"""
+        else:
+            system_prompt = """You are Voice, Echo's friendly campus safety assistant. You help students stay safe with natural, conversational responses.
+
+CORE RULES:
+1. Analyze user's free text and understand their intent contextually
+2. Respond naturally, short, and supportive - avoid scripted responses
+3. Guide users step by step based on what they actually need
+4. Always ask for confirmation before suggesting actions
+5. End conversations with 1-2 practical safety tips
+6. Be adaptive - understand context and emotion from their message
+
+INTENTS TO DETECT:
+- Incident reporting (theft, harassment, safety concerns)
+- Emergency situations (immediate danger)
+- Account help (signup, signin, password issues)  
+- Echo features (SOS alerts, crime map, reports)
+- General safety guidance and support
+
+EMERGENCY DISCLAIMER: For serious situations, always say "If this is an emergency, call police immediately at 100. I can't make calls for you, but our site has one-click helpline access."
+"""
         
-        # Combine context into a single prompt
-        full_context = "\n".join(context_messages)
+        # Analyze user message and create contextual prompt
+        user_input = chat_message.message.lower()
+        
+        # Intent detection logic
+        intent = "general"
+        if any(word in user_input for word in ["stolen", "theft", "robbed", "missing phone", "missing wallet"]):
+            intent = "theft_report"
+        elif any(word in user_input for word in ["harassment", "harassed", "bothering", "uncomfortable", "scared"]):
+            intent = "harassment_report"
+        elif any(word in user_input for word in ["emergency", "danger", "help", "urgent", "scared", "threat"]):
+            intent = "emergency"
+        elif any(word in user_input for word in ["signup", "sign up", "register", "account", "create account"]):
+            intent = "account_help"
+        elif any(word in user_input for word in ["signin", "sign in", "login", "password", "forgot password"]):
+            intent = "signin_help"
+        elif any(word in user_input for word in ["sos", "alert", "emergency contact"]):
+            intent = "sos_help"
+        elif any(word in user_input for word in ["map", "crime map", "location", "area"]):
+            intent = "map_help"
+        elif any(word in user_input for word in ["report", "reporting", "incident"]):
+            intent = "report_help"
+        
+        # Create contextual message for LLM
+        context_info = f"User intent detected: {intent}\nUser message: {chat_message.message}\nConversation context: {context}"
         
         # Initialize LLM chat
         chat = LlmChat(
@@ -782,80 +835,126 @@ Your role is to guide users through Echo's safety features step by step."""
         ).with_model("openai", "gpt-4o-mini")
         
         # Send message to ChatGPT
-        user_message = UserMessage(text=full_context)
+        user_message = UserMessage(text=context_info)
         llm_response = await chat.send_message(user_message)
         
-        # Determine next stage and quick replies based on current stage
-        quick_replies = []
-        buttons = []
-        next_stage = stage
-        show_serious = False
+        # Generate appropriate quick buttons based on intent
+        quick_buttons = []
+        safety_tip = None
         
-        if stage == "initial":
-            quick_replies = ["Theft", "Harassment", "Drug Abuse", "Other"]
-            next_stage = "incident_type"
-        
-        elif stage == "incident_type":
-            quick_replies = ["Low", "Medium", "High"]
-            next_stage = "priority"
-        
-        elif stage == "priority":
-            if chat_message.priority_level == "high":
-                show_serious = True
-                buttons = [
-                    {"text": "Open Report Page", "action": "open_report"},
-                    {"text": "Open Sign In", "action": "open_signin"},
-                    {"text": "Call Help", "action": "call_help"}
-                ]
-                next_stage = "actions"
-            else:
-                buttons = [
-                    {"text": "Open Report Page", "action": "open_report"},
-                    {"text": "Open Sign In", "action": "open_signin"}
-                ]
-                quick_replies = ["Sign Up Guide", "Sign In Guide", "No Thanks"]
-                next_stage = "signin_help"
-        
-        elif stage == "actions" or stage == "signin_help":
-            # Final stage - provide options to restart or get more help
-            buttons = [
-                {"text": "Start Over", "action": "restart"},
-                {"text": "Get More Help", "action": "help"}
+        if intent == "theft_report":
+            quick_buttons = [
+                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"},
+                {"text": "Call Campus Security", "action": "call", "value": "security"},
+                {"text": "View Crime Map", "action": "navigate", "value": "/crime-map"}
             ]
+        elif intent == "harassment_report":
+            quick_buttons = [
+                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"},
+                {"text": "Call Emergency", "action": "call", "value": "emergency"},
+                {"text": "SOS Alert", "action": "sos", "value": "true"}
+            ]
+        elif intent == "emergency":
+            quick_buttons = [
+                {"text": "Call Emergency (100)", "action": "call", "value": "emergency"},
+                {"text": "SOS Alert", "action": "sos", "value": "true"},
+                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"}
+            ]
+        elif intent == "account_help":
+            quick_buttons = [
+                {"text": "Sign Up", "action": "navigate", "value": "/signup"},
+                {"text": "Sign In", "action": "navigate", "value": "/signin"}
+            ]
+        elif intent == "signin_help":
+            quick_buttons = [
+                {"text": "Sign In", "action": "navigate", "value": "/signin"},
+                {"text": "Forgot Password", "action": "navigate", "value": "/forgot-password"}
+            ]
+        elif intent == "map_help":
+            quick_buttons = [
+                {"text": "View Crime Map", "action": "navigate", "value": "/crime-map"}
+            ]
+        elif intent == "report_help":
+            quick_buttons = [
+                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"}
+            ]
+        else:
+            # General help buttons
+            quick_buttons = [
+                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"},
+                {"text": "View Map", "action": "navigate", "value": "/crime-map"},
+                {"text": "Get Help", "action": "help", "value": "general"}
+            ]
+        
+        # Generate safety tip based on language and context
+        if language == "tamil_english":
+            safety_tips = [
+                "💡 Oru tip: rathri time la group la travel pannunga da, safe ah irukum!",
+                "🔒 Phone la emergency contacts ready ah vekkunga bro!",
+                "🗺️ Puthiya area ku pogumbothu crime map check pannunnga!",
+                "🚨 Suspicious activity patheenga na campus security ku immediately call pannunga!",
+                "💪 Self defense class join pannunnga if possible, useful ah irukum!"
+            ]
+        else:
+            safety_tips = [
+                "💡 Safety tip: Travel in groups during late hours for better security!",
+                "🔒 Keep emergency contacts easily accessible on your phone!",
+                "🗺️ Check the crime map before visiting unfamiliar areas on campus!",
+                "🚨 Report any suspicious activity to campus security immediately!",
+                "💪 Consider joining self-defense classes for personal safety!"
+            ]
+        
+        safety_tip = safety_tips[hash(chat_message.session_id) % len(safety_tips)]
+        
+        # Update conversation context
+        context.update({
+            'last_intent': intent,
+            'language': language,
+            'interaction_count': context.get('interaction_count', 0) + 1
+        })
         
         # Log intent for metrics (non-PII)
         intent_log = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "incident_type": chat_message.incident_type,
-            "priority_level": chat_message.priority_level,
-            "conversation_stage": next_stage,
+            "intent_detected": intent,
+            "language_used": language,
             "session_id": chat_message.session_id
         }
         logging.info(f"Voice chatbot intent: {intent_log}")
         
         return VoiceChatResponse(
             response=llm_response,
-            quick_replies=quick_replies,
-            buttons=buttons,
-            conversation_stage=next_stage,
-            show_serious_actions=show_serious,
-            session_id=chat_message.session_id
+            quick_buttons=quick_buttons,
+            language_used=language,
+            intent_detected=intent,
+            safety_tip=safety_tip,
+            session_id=chat_message.session_id,
+            conversation_context=context
         )
         
     except Exception as e:
         logging.error(f"Error in voice chatbot: {str(e)}")
         
-        # Fallback response
+        # Fallback response with language awareness
+        fallback_lang = chat_message.language_preference or "english"
+        if fallback_lang == "tamil_english":
+            fallback_response = "Sorry bro, konjam problem irukku. Emergency na police ku call pannunga - 100. Campus security um available ah irukku!"
+            fallback_tip = "🔒 Safe ah irukka emergency contacts ready ah vekkunga!"
+        else:
+            fallback_response = "I'm having trouble right now. For emergencies, call police at 100. Campus security is also available!"
+            fallback_tip = "🔒 Always keep emergency contacts readily available!"
+        
         return VoiceChatResponse(
-            response="I'm having trouble right now. For immediate help, please contact campus security or use our SOS feature. If life is in danger, call police now. I can't call for you, but our site offers one-click helpline access.",
-            quick_replies=["Try Again", "Get Help"],
-            buttons=[
-                {"text": "Open Sign In", "action": "open_signin"},
-                {"text": "Call Help", "action": "call_help"}
+            response=fallback_response,
+            quick_buttons=[
+                {"text": "Call Emergency", "action": "call", "value": "emergency"},
+                {"text": "Try Again", "action": "retry", "value": "true"}
             ],
-            conversation_stage="error",
-            show_serious_actions=True,
-            session_id=chat_message.session_id or f"error_{str(uuid.uuid4())[:8]}"
+            language_used=fallback_lang,
+            intent_detected="error",
+            safety_tip=fallback_tip,
+            session_id=chat_message.session_id or f"error_{str(uuid.uuid4())[:8]}",
+            conversation_context={"error": True}
         )
 
 # Basic route from original code
