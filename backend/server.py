@@ -805,21 +805,22 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
             intent = "theft_report"
         elif any(word in user_input for word in ["harassment", "harassed", "bothering", "uncomfortable", "scared"]):
             intent = "harassment_report"
-        elif any(word in user_input for word in ["emergency", "danger", "help", "urgent", "scared", "threat"]):
-            intent = "emergency"
         elif any(word in user_input for word in ["signup", "sign up", "register", "account", "create account"]):
             intent = "account_help"
         elif any(word in user_input for word in ["signin", "sign in", "login", "password", "forgot password"]):
             intent = "signin_help"
-        # Enhanced SOS/helplines detection
-        elif any(phrase in user_input for phrase in ["sos", "help", "helpline", "helplines", "emergency contact", "emergency number", "emergency numbers", "need help", "urgent help"]):
+        # Enhanced SOS/helplines detection (check BEFORE emergency to avoid overlap)
+        elif any(phrase in user_input for phrase in ["sos", "helpline", "helplines", "emergency contact", "emergency number", "emergency numbers", "need help numbers", "show me emergency contacts"]):
             intent = "sos_help"
-        # Enhanced map detection  
+        # Enhanced map detection (check BEFORE emergency to avoid overlap)
         elif any(phrase in user_input for phrase in ["map", "crime map", "show map", "view map", "check map", "location", "area", "where", "show me the map"]):
             intent = "map_help"
-        # Enhanced report detection
+        # Enhanced report detection (check BEFORE emergency to avoid overlap)
         elif any(phrase in user_input for phrase in ["report", "reporting", "incident", "report incident", "want to report", "need to report", "file report"]):
             intent = "report_help"
+        # Emergency detection - more specific to avoid catching conversational "help"
+        elif any(phrase in user_input for phrase in ["emergency", "danger", "urgent help", "need urgent", "in danger", "threat", "threatening"]):
+            intent = "emergency"
         
         # Create contextual message for LLM
         context_info = f"User intent detected: {intent}\nUser message: {chat_message.message}\nConversation context: {context}"
