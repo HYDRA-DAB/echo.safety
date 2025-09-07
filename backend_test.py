@@ -1431,7 +1431,19 @@ class CampusSafetyAPITester:
             self.test_ai_refresh_analysis_with_auth,
             self.test_ai_predictions_fallback_behavior,
             self.test_ai_crime_filtering_accuracy,
-            self.test_ai_response_format_validation
+            self.test_ai_response_format_validation,
+            # Voice Chatbot Tests - NEW COMPREHENSIVE SUITE
+            self.test_voice_chatbot_initial_conversation,
+            self.test_voice_chatbot_language_selection_english,
+            self.test_voice_chatbot_language_selection_tamil,
+            self.test_voice_chatbot_theft_intent_detection,
+            self.test_voice_chatbot_emergency_intent_detection,
+            self.test_voice_chatbot_map_intent_detection,
+            self.test_voice_chatbot_session_management,
+            self.test_voice_chatbot_invalid_request_handling,
+            self.test_voice_chatbot_fallback_behavior,
+            self.test_voice_chatbot_quick_buttons_structure,
+            self.test_voice_chatbot_safety_tips
         ]
         
         for test in tests:
