@@ -38,6 +38,7 @@ const API = `${BACKEND_URL}/api`;
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [crimes, setCrimes] = useState([]);
   const [aiAnalysis, setAiAnalysis] = useState({
@@ -48,6 +49,7 @@ const Dashboard = () => {
     last_updated: null
   });
   const [loading, setLoading] = useState(true);
+  const [highlightSection, setHighlightSection] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportForm, setReportForm] = useState({
     title: '',
