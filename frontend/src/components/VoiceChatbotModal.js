@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Mic, MessageSquare, UserPlus, LogIn, AlertTriangle, Send, Phone, Shield } from 'lucide-react';
+import { X, Send, Phone, AlertTriangle, Shield, Map } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent } from './ui/dialog';
@@ -13,18 +13,18 @@ const API = `${BACKEND_URL}/api`;
 const VoiceChatbotModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const modalRef = useRef(null);
-  const firstFocusableRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   
   // Chat state
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationStage, setConversationStage] = useState('initial');
   const [sessionId, setSessionId] = useState(null);
-  const [currentQuickReplies, setCurrentQuickReplies] = useState([]);
-  const [currentButtons, setCurrentButtons] = useState([]);
-  const [showSeriousActions, setShowSeriousActions] = useState(false);
+  const [conversationContext, setConversationContext] = useState({});
+  const [languagePreference, setLanguagePreference] = useState(null);
+  const [currentQuickButtons, setCurrentQuickButtons] = useState([]);
+  const [showSafetyTip, setShowSafetyTip] = useState(null);
 
   // Initialize conversation when modal opens
   useEffect(() => {
@@ -38,24 +38,22 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Focus trap and keyboard handling
+  // Focus input when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        if (firstFocusableRef.current) {
-          firstFocusableRef.current.focus();
-        }
-      }, 100);
-
-      const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-          onClose();
-        }
-      };
-
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
+    if (isOpen && inputRef.current) {
+      setTimeout(() => inputRef.current.focus(), 200);
     }
+  }, [isOpen]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
   const scrollToBottom = () => {
@@ -63,126 +61,117 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
   };
 
   const initializeConversation = async () => {
-    const welcomeMessage = {
-      type: 'bot',
-      content: "Hi! I'm Voice, your campus safety guide. I'm here to help you with Echo's safety features. What can I help you with today?",
-      timestamp: new Date()
-    };
-    
-    setMessages([welcomeMessage]);
-    setCurrentQuickReplies(['Report an Incident', 'Need Help Signing In', 'Emergency Guidance', 'Other']);
-    setConversationStage('initial');
+    // Start with initial message
+    await sendMessage("start", null, {});
   };
 
-  const sendMessage = async (message, incidentType = null, priorityLevel = null) => {
-    if (!message.trim() && !incidentType) return;
+  const sendMessage = async (message, languagePref = null, context = null) => {
+    if (!message.trim() && message !== "start") return;
 
-    const userMessage = {
-      type: 'user',
-      content: message,
-      timestamp: new Date()
-    };
+    // Add user message (except for initial "start")
+    if (message !== "start") {
+      const userMessage = {
+        type: 'user',
+        content: message,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, userMessage]);
+    }
 
-    setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    setCurrentQuickReplies([]);
-    setCurrentButtons([]);
+    setCurrentQuickButtons([]);
 
     try {
       const requestData = {
-        message: message,
-        incident_type: incidentType,
-        priority_level: priorityLevel,
-        conversation_stage: conversationStage,
+        message: message === "start" ? "Hi" : message,
+        language_preference: languagePref || languagePreference,
+        conversation_context: context || conversationContext,
         session_id: sessionId
       };
 
       const response = await axios.post(`${API}/voice`, requestData);
       const data = response.data;
 
-      // Update session ID
-      if (data.session_id) {
-        setSessionId(data.session_id);
-      }
+      // Update session state
+      if (data.session_id) setSessionId(data.session_id);
+      if (data.language_used) setLanguagePreference(data.language_used);
+      if (data.conversation_context) setConversationContext(data.conversation_context);
 
+      // Add bot message
       const botMessage = {
         type: 'bot',
         content: data.response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        intent: data.intent_detected
       };
 
       setMessages(prev => [...prev, botMessage]);
-      setCurrentQuickReplies(data.quick_replies || []);
-      setCurrentButtons(data.buttons || []);
-      setConversationStage(data.conversation_stage);
-      setShowSeriousActions(data.show_serious_actions);
+      setCurrentQuickButtons(data.quick_buttons || []);
+      
+      // Show safety tip if provided
+      if (data.safety_tip) {
+        setShowSafetyTip(data.safety_tip);
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage = {
         type: 'bot',
-        content: "I'm having trouble right now. For immediate help, please contact campus security. If this is an emergency, call police immediately.",
+        content: "I'm having trouble connecting right now. For emergencies, call 100 immediately. Campus security is also available!",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
-      toast.error('Unable to connect to chatbot service');
+      toast.error('Unable to connect to Voice assistant');
     } finally {
       setIsLoading(false);
       setInputMessage('');
     }
   };
 
-  const handleQuickReply = (reply) => {
-    // Handle quick replies based on conversation stage
-    if (conversationStage === 'initial') {
-      const incidentTypeMap = {
-        'Report an Incident': 'other',
-        'Theft': 'theft',
-        'Harassment': 'harassment', 
-        'Drug Abuse': 'drug_abuse',
-        'Other': 'other'
-      };
-      sendMessage(reply, incidentTypeMap[reply] || 'other');
-    } else if (conversationStage === 'incident_type') {
-      const priorityMap = {
-        'Low': 'low',
-        'Medium': 'medium',
-        'High': 'high'
-      };
-      sendMessage(reply, null, priorityMap[reply]);
-    } else {
-      sendMessage(reply);
-    }
-  };
-
-  const handleButtonAction = (action) => {
-    switch (action) {
-      case 'open_report':
+  const handleQuickButton = async (button) => {
+    if (button.action === "select_language") {
+      setLanguagePreference(button.value);
+      await sendMessage(`I prefer ${button.value}`, button.value, conversationContext);
+    } else if (button.action === "navigate") {
+      const confirmMessage = languagePreference === 'tamil_english' 
+        ? `${button.text} page ku pogalama?`
+        : `Should I take you to ${button.text}?`;
+      
+      const confirmResult = confirm(confirmMessage);
+      if (confirmResult) {
+        onClose();
+        navigate(button.value);
+      }
+    } else if (button.action === "call") {
+      const confirmMessage = languagePreference === 'tamil_english'
+        ? "Emergency call pannalama?"
+        : "Should I help you make an emergency call?";
+      
+      const confirmResult = confirm(confirmMessage);
+      if (confirmResult) {
+        if (button.value === "emergency") {
+          window.open('tel:100', '_self');
+        } else {
+          window.open('tel:+911234567890', '_self'); // Campus security number
+        }
+      }
+    } else if (button.action === "sos") {
+      const confirmMessage = languagePreference === 'tamil_english'
+        ? "SOS alert send pannalama?"
+        : "Should I trigger SOS alert?";
+      
+      const confirmResult = confirm(confirmMessage);
+      if (confirmResult) {
+        // Navigate to dashboard where SOS functionality is available
         onClose();
         navigate('/dashboard');
-        break;
-      case 'open_signin':
-        onClose();
-        navigate('/signin');
-        break;
-      case 'open_signup':
-        onClose();
-        navigate('/signup');
-        break;
-      case 'call_help':
-        window.open('tel:100', '_self');
-        break;
-      case 'restart':
-        setMessages([]);
-        setConversationStage('initial');
-        setSessionId(null);
-        initializeConversation();
-        break;
-      case 'help':
-        sendMessage('I need more help');
-        break;
-      default:
-        break;
+        toast.success(languagePreference === 'tamil_english' 
+          ? "Dashboard la SOS button use pannunga!" 
+          : "Use the SOS button on Dashboard!");
+      }
+    } else {
+      // For other button types, send as regular message
+      await sendMessage(button.text);
     }
   };
 
@@ -199,79 +188,90 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         ref={modalRef}
-        className="bg-gray-900 border-gray-700 text-white w-full max-w-md mx-4 h-[90vh] max-h-[600px] overflow-hidden flex flex-col sm:max-w-lg"
+        className="bg-gray-900 border border-purple-500/30 text-white w-full max-w-md mx-4 h-[85vh] max-h-[600px] overflow-hidden flex flex-col sm:max-w-lg rounded-2xl shadow-2xl"
         aria-labelledby="voice-chatbot-title"
         onPointerDownOutside={onClose}
         onEscapeKeyDown={onClose}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700/50 flex-shrink-0 bg-gradient-to-r from-purple-900/20 to-blue-900/20">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <Mic className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-lg">🔊</span>
             </div>
             <div>
               <h2 id="voice-chatbot-title" className="text-lg font-bold text-white">Voice</h2>
-              <p className="text-xs text-gray-400">Campus Safety Assistant</p>
+              <p className="text-xs text-purple-300">Adaptive AI Assistant</p>
             </div>
           </div>
           <Button
-            ref={firstFocusableRef}
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="text-gray-400 hover:text-white hover:bg-gray-800 rounded-full w-8 h-8 p-0"
-            aria-label="Close Voice chatbot"
+            className="text-gray-400 hover:text-white hover:bg-gray-800 rounded-full w-8 h-8 p-0 transition-colors"
+            aria-label="Close Voice assistant"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Serious Actions Alert */}
-        {showSeriousActions && (
-          <div className="p-4 bg-red-900/20 border-b border-red-500/30 flex-shrink-0">
-            <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-red-400 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="text-red-300 font-semibold text-sm">Serious Actions Needed</h3>
-                <ul className="text-red-200 text-xs mt-1 space-y-1">
-                  <li>• Get to a safe place immediately</li>
-                  <li>• Call Police: 100 (Emergency)</li>
-                  <li>• Use our SOS feature to alert contacts</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-900 to-gray-800">
           {messages.map((message, index) => (
             <div
               key={index}
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[80%] p-3 rounded-lg text-sm ${
-                  message.type === 'user'
-                    ? 'bg-blue-600 text-white ml-4'
-                    : 'bg-gray-800 text-gray-200 mr-4'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{message.content}</p>
-                <p className="text-xs opacity-60 mt-1">
-                  {message.timestamp.toLocaleTimeString()}
-                </p>
+              <div className="flex items-end space-x-2 max-w-[85%]">
+                {message.type === 'bot' && (
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">🔊</span>
+                  </div>
+                )}
+                <div
+                  className={`p-3 rounded-2xl text-sm shadow-lg ${
+                    message.type === 'user'
+                      ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-br-md'
+                      : 'bg-gray-700/80 text-gray-100 rounded-bl-md border border-gray-600/50'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  <p className="text-xs opacity-60 mt-2">
+                    {message.timestamp.toLocaleTimeString()}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
           
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-gray-800 text-gray-200 max-w-[80%] p-3 rounded-lg mr-4">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                  <span className="text-sm">Voice is thinking...</span>
+              <div className="flex items-end space-x-2 max-w-[85%]">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm">🔊</span>
+                </div>
+                <div className="bg-gray-700/80 text-gray-200 p-3 rounded-2xl rounded-bl-md border border-gray-600/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
+                    <span className="text-sm text-gray-300">Voice is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Safety Tip */}
+          {showSafetyTip && (
+            <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/30 rounded-lg p-3 mt-4">
+              <div className="flex items-start space-x-2">
+                <Shield className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="text-green-300 text-sm font-medium">Safety Tip</p>
+                  <p className="text-green-200 text-sm mt-1">{showSafetyTip}</p>
                 </div>
               </div>
             </div>
@@ -280,48 +280,27 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Replies */}
-        {currentQuickReplies.length > 0 && (
-          <div className="p-4 border-t border-gray-700 flex-shrink-0">
-            <p className="text-xs text-gray-400 mb-2">Quick replies:</p>
+        {/* Quick Buttons */}
+        {currentQuickButtons.length > 0 && (
+          <div className="p-4 border-t border-gray-700/50 flex-shrink-0 bg-gray-900/50">
             <div className="flex flex-wrap gap-2">
-              {currentQuickReplies.map((reply, index) => (
+              {currentQuickButtons.map((button, index) => (
                 <Button
                   key={index}
-                  onClick={() => handleQuickReply(reply)}
+                  onClick={() => handleQuickButton(button)}
                   variant="outline"
                   size="sm"
-                  className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
-                  disabled={isLoading}
-                >
-                  {reply}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {currentButtons.length > 0 && (
-          <div className="p-4 border-t border-gray-700 flex-shrink-0">
-            <p className="text-xs text-gray-400 mb-2">Actions:</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {currentButtons.map((button, index) => (
-                <Button
-                  key={index}
-                  onClick={() => handleButtonAction(button.action)}
-                  className={`text-sm py-2 ${
-                    button.action === 'call_help' ? 'bg-red-600 hover:bg-red-700' :
-                    button.action === 'open_signin' ? 'bg-blue-600 hover:bg-blue-700' :
-                    button.action === 'open_report' ? 'bg-green-600 hover:bg-green-700' :
-                    'bg-gray-600 hover:bg-gray-700'
+                  className={`text-xs rounded-full border transition-all duration-200 ${
+                    button.action === 'call' ? 'border-red-500/50 text-red-300 hover:bg-red-500/20' :
+                    button.action === 'navigate' ? 'border-blue-500/50 text-blue-300 hover:bg-blue-500/20' :
+                    button.action === 'select_language' ? 'border-purple-500/50 text-purple-300 hover:bg-purple-500/20' :
+                    'border-gray-500/50 text-gray-300 hover:bg-gray-500/20'
                   }`}
                   disabled={isLoading}
                 >
-                  {button.action === 'call_help' && <Phone className="w-4 h-4 mr-2" />}
-                  {button.action === 'open_signin' && <LogIn className="w-4 h-4 mr-2" />}
-                  {button.action === 'open_report' && <AlertTriangle className="w-4 h-4 mr-2" />}
-                  {button.action === 'open_signup' && <UserPlus className="w-4 h-4 mr-2" />}
+                  {button.action === 'call' && <Phone className="w-3 h-3 mr-1" />}
+                  {button.action === 'navigate' && button.value.includes('map') && <Map className="w-3 h-3 mr-1" />}
+                  {button.action === 'sos' && <AlertTriangle className="w-3 h-3 mr-1" />}
                   {button.text}
                 </Button>
               ))}
@@ -330,23 +309,28 @@ const VoiceChatbotModal = ({ isOpen, onClose }) => {
         )}
 
         {/* Input */}
-        <div className="p-4 border-t border-gray-700 flex-shrink-0">
+        <div className="p-4 border-t border-gray-700/50 flex-shrink-0 bg-gray-900/80">
           <form onSubmit={handleSubmit} className="flex space-x-2">
             <Input
+              ref={inputRef}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              placeholder={languagePreference === 'tamil_english' ? "Type pannunga..." : "Type your message..."}
+              className="flex-1 bg-gray-800/50 border-gray-600/50 text-white placeholder-gray-400 rounded-full px-4 focus:border-purple-500/50 focus:ring-purple-500/20"
               disabled={isLoading}
+              maxLength={500}
             />
             <Button
               type="submit"
               disabled={isLoading || !inputMessage.trim()}
-              className="bg-blue-600 hover:bg-blue-700 px-3"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full px-4 shadow-lg transition-all duration-200"
             >
               <Send className="w-4 h-4" />
             </Button>
           </form>
+          <div className="text-xs text-gray-500 mt-2 text-center">
+            Voice is powered by AI • {languagePreference === 'tamil_english' ? 'Tanglish mode' : 'English mode'}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
