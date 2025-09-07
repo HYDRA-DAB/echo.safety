@@ -225,7 +225,22 @@ const VoiceChatbotModal = ({ isOpen, onClose, widgetPosition = { x: 24, y: 24 } 
       // Close modal and navigate after a brief delay
       setTimeout(() => {
         onClose();
-        navigate(pendingAction.value);
+        
+        // Add highlight parameter based on button text and action
+        let navigationUrl = pendingAction.value;
+        
+        if (navigationUrl === '/dashboard') {
+          // Add highlighting based on the button text
+          const buttonText = pendingAction.text.toLowerCase();
+          
+          if (buttonText.includes('report') || buttonText.includes('incident')) {
+            navigationUrl = '/dashboard?highlight=report';
+          } else if (buttonText.includes('sos') || buttonText.includes('helpline') || buttonText.includes('emergency')) {
+            navigationUrl = '/dashboard?highlight=sos';
+          }
+        }
+        
+        navigate(navigationUrl);
       }, 1000);
       
     } else {
