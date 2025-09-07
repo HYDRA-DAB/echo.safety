@@ -887,6 +887,520 @@ class CampusSafetyAPITester:
             self.log_test("AI Response Format Validation", False, f"Status: {status}")
             return False
 
+    def test_voice_chatbot_initial_conversation(self):
+        """Test voice chatbot initial conversation with 'Hi' message"""
+        print("\n🔍 Testing Voice Chatbot - Initial Conversation...")
+        
+        chat_data = {
+            "message": "Hi",
+            "language_preference": None,
+            "conversation_context": {},
+            "session_id": None
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check required response fields
+                required_fields = ['response', 'session_id', 'language_used', 'conversation_context']
+                has_required_fields = all(field in data for field in required_fields)
+                
+                if not has_required_fields:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Voice Chatbot Initial", False, f"Missing fields: {missing_fields}")
+                    return False
+                
+                # Check that response asks for language preference
+                response_text = data.get('response', '').lower()
+                has_language_prompt = any(word in response_text for word in ['language', 'english', 'tamil'])
+                
+                # Check quick buttons for language selection
+                quick_buttons = data.get('quick_buttons', [])
+                has_language_buttons = len(quick_buttons) >= 2
+                
+                # Check session ID is generated
+                session_id = data.get('session_id', '')
+                has_session_id = len(session_id) > 0
+                
+                success = has_required_fields and has_language_prompt and has_language_buttons and has_session_id
+                
+                self.log_test("Voice Chatbot Initial", success, 
+                            f"Session: {session_id[:12]}..., Buttons: {len(quick_buttons)}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Initial", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Initial", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_language_selection_english(self):
+        """Test voice chatbot English language selection"""
+        print("\n🔍 Testing Voice Chatbot - English Language Selection...")
+        
+        chat_data = {
+            "message": "English",
+            "language_preference": "english",
+            "conversation_context": {"language_asked": True},
+            "session_id": f"test_session_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check language is set to English
+                language_used = data.get('language_used', '')
+                is_english = language_used == 'english'
+                
+                # Check response is in English (no Tamil words)
+                response_text = data.get('response', '')
+                tamil_words = ['da', 'bro', 'anna', 'thangachi', 'pannunga', 'irukum']
+                has_tamil = any(word in response_text.lower() for word in tamil_words)
+                
+                # Check conversation context is updated
+                context = data.get('conversation_context', {})
+                has_language_context = context.get('language') == 'english'
+                
+                success = is_english and not has_tamil and has_language_context
+                
+                self.log_test("Voice Chatbot English", success, 
+                            f"Language: {language_used}, Context updated: {has_language_context}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot English", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot English", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_language_selection_tamil(self):
+        """Test voice chatbot Tamil-English (Tanglish) language selection"""
+        print("\n🔍 Testing Voice Chatbot - Tamil-English Language Selection...")
+        
+        chat_data = {
+            "message": "Tamil-English",
+            "language_preference": "tamil_english",
+            "conversation_context": {"language_asked": True},
+            "session_id": f"test_session_tamil_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check language is set to Tamil-English
+                language_used = data.get('language_used', '')
+                is_tamil_english = language_used == 'tamil_english'
+                
+                # Check conversation context is updated
+                context = data.get('conversation_context', {})
+                has_language_context = context.get('language') == 'tamil_english'
+                
+                success = is_tamil_english and has_language_context
+                
+                self.log_test("Voice Chatbot Tamil-English", success, 
+                            f"Language: {language_used}, Context updated: {has_language_context}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Tamil-English", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Tamil-English", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_theft_intent_detection(self):
+        """Test voice chatbot theft intent detection and quick buttons"""
+        print("\n🔍 Testing Voice Chatbot - Theft Intent Detection...")
+        
+        chat_data = {
+            "message": "My phone was stolen from the library",
+            "language_preference": "english",
+            "conversation_context": {"language": "english"},
+            "session_id": f"test_theft_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check intent detection
+                intent_detected = data.get('intent_detected', '')
+                is_theft_intent = intent_detected == 'theft_report'
+                
+                # Check quick buttons for theft scenario
+                quick_buttons = data.get('quick_buttons', [])
+                has_report_button = any('report' in btn.get('text', '').lower() for btn in quick_buttons)
+                has_map_button = any('map' in btn.get('text', '').lower() for btn in quick_buttons)
+                
+                # Check safety tip is provided
+                safety_tip = data.get('safety_tip', '')
+                has_safety_tip = len(safety_tip) > 0
+                
+                # Check response mentions reporting or help
+                response_text = data.get('response', '').lower()
+                mentions_help = any(word in response_text for word in ['report', 'help', 'police', 'security'])
+                
+                success = is_theft_intent and has_report_button and has_safety_tip and mentions_help
+                
+                self.log_test("Voice Chatbot Theft Intent", success, 
+                            f"Intent: {intent_detected}, Buttons: {len(quick_buttons)}, Safety tip: {bool(safety_tip)}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Theft Intent", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Theft Intent", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_emergency_intent_detection(self):
+        """Test voice chatbot emergency intent detection"""
+        print("\n🔍 Testing Voice Chatbot - Emergency Intent Detection...")
+        
+        chat_data = {
+            "message": "Help! I'm in danger and need urgent assistance",
+            "language_preference": "english",
+            "conversation_context": {"language": "english"},
+            "session_id": f"test_emergency_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check intent detection
+                intent_detected = data.get('intent_detected', '')
+                is_emergency_intent = intent_detected == 'emergency'
+                
+                # Check quick buttons for emergency scenario
+                quick_buttons = data.get('quick_buttons', [])
+                has_call_button = any('call' in btn.get('text', '').lower() or '100' in btn.get('text', '') for btn in quick_buttons)
+                has_sos_button = any('sos' in btn.get('text', '').lower() for btn in quick_buttons)
+                
+                # Check response mentions emergency services
+                response_text = data.get('response', '').lower()
+                mentions_emergency = any(word in response_text for word in ['police', '100', 'emergency', 'call'])
+                
+                success = is_emergency_intent and (has_call_button or has_sos_button) and mentions_emergency
+                
+                self.log_test("Voice Chatbot Emergency Intent", success, 
+                            f"Intent: {intent_detected}, Emergency buttons: {has_call_button or has_sos_button}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Emergency Intent", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Emergency Intent", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_map_intent_detection(self):
+        """Test voice chatbot map intent detection"""
+        print("\n🔍 Testing Voice Chatbot - Map Intent Detection...")
+        
+        chat_data = {
+            "message": "Can you show me the crime map for campus areas?",
+            "language_preference": "english",
+            "conversation_context": {"language": "english"},
+            "session_id": f"test_map_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check intent detection
+                intent_detected = data.get('intent_detected', '')
+                is_map_intent = intent_detected == 'map_help'
+                
+                # Check quick buttons for map scenario
+                quick_buttons = data.get('quick_buttons', [])
+                has_map_button = any('map' in btn.get('text', '').lower() for btn in quick_buttons)
+                
+                # Check button action for navigation
+                map_button_action = None
+                for btn in quick_buttons:
+                    if 'map' in btn.get('text', '').lower():
+                        map_button_action = btn.get('action', '')
+                        break
+                
+                has_navigate_action = map_button_action in ['navigate', 'confirm_navigate']
+                
+                success = is_map_intent and has_map_button and has_navigate_action
+                
+                self.log_test("Voice Chatbot Map Intent", success, 
+                            f"Intent: {intent_detected}, Map button: {has_map_button}, Action: {map_button_action}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Map Intent", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Map Intent", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_session_management(self):
+        """Test voice chatbot session management and context persistence"""
+        print("\n🔍 Testing Voice Chatbot - Session Management...")
+        
+        # First message to establish session
+        session_id = f"test_session_mgmt_{datetime.now().strftime('%H%M%S')}"
+        
+        chat_data_1 = {
+            "message": "Hi there",
+            "language_preference": "english",
+            "conversation_context": {},
+            "session_id": session_id
+        }
+        
+        response_1 = self.make_request('POST', 'voice', chat_data_1)
+        
+        if not response_1 or response_1.status_code != 200:
+            self.log_test("Voice Chatbot Session Management", False, "First message failed")
+            return False
+        
+        try:
+            data_1 = response_1.json()
+            context_1 = data_1.get('conversation_context', {})
+            
+            # Second message using same session
+            chat_data_2 = {
+                "message": "I need help with reporting",
+                "language_preference": "english",
+                "conversation_context": context_1,
+                "session_id": session_id
+            }
+            
+            response_2 = self.make_request('POST', 'voice', chat_data_2)
+            
+            if response_2 and response_2.status_code == 200:
+                data_2 = response_2.json()
+                
+                # Check session ID consistency
+                session_id_1 = data_1.get('session_id', '')
+                session_id_2 = data_2.get('session_id', '')
+                session_consistent = session_id_1 == session_id_2 == session_id
+                
+                # Check context persistence and updates
+                context_2 = data_2.get('conversation_context', {})
+                interaction_count = context_2.get('interaction_count', 0)
+                context_updated = interaction_count > context_1.get('interaction_count', 0)
+                
+                success = session_consistent and context_updated
+                
+                self.log_test("Voice Chatbot Session Management", success, 
+                            f"Session consistent: {session_consistent}, Context updated: {context_updated}")
+                
+                return success
+            else:
+                self.log_test("Voice Chatbot Session Management", False, "Second message failed")
+                return False
+                
+        except Exception as e:
+            self.log_test("Voice Chatbot Session Management", False, f"JSON error: {str(e)}")
+            return False
+
+    def test_voice_chatbot_invalid_request_handling(self):
+        """Test voice chatbot error handling for invalid requests"""
+        print("\n🔍 Testing Voice Chatbot - Invalid Request Handling...")
+        
+        # Test with missing message field
+        invalid_data = {
+            "language_preference": "english",
+            "conversation_context": {},
+            "session_id": "test_invalid"
+        }
+        
+        response = self.make_request('POST', 'voice', invalid_data)
+        
+        # Should return 422 for validation error
+        if response and response.status_code == 422:
+            try:
+                data = response.json()
+                has_validation_error = 'detail' in data
+                self.log_test("Voice Chatbot Invalid Request", True, 
+                            f"Correctly rejected invalid request: {response.status_code}")
+                return True
+            except:
+                self.log_test("Voice Chatbot Invalid Request", False, "Invalid JSON in error response")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Invalid Request", False, f"Expected 422, got: {status}")
+            return False
+
+    def test_voice_chatbot_fallback_behavior(self):
+        """Test voice chatbot fallback behavior when LLM might fail"""
+        print("\n🔍 Testing Voice Chatbot - Fallback Behavior...")
+        
+        # Test with a very long message that might cause issues
+        long_message = "Help me " * 100  # Very long repetitive message
+        
+        chat_data = {
+            "message": long_message,
+            "language_preference": "english",
+            "conversation_context": {"language": "english"},
+            "session_id": f"test_fallback_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check that we get a valid response even if LLM fails
+                has_response = 'response' in data and len(data['response']) > 0
+                has_session_id = 'session_id' in data and len(data['session_id']) > 0
+                has_language = 'language_used' in data
+                
+                # Check if it's a fallback response
+                response_text = data.get('response', '').lower()
+                is_fallback = any(word in response_text for word in ['trouble', 'problem', 'emergency', 'sorry'])
+                
+                # Should have emergency buttons in fallback
+                quick_buttons = data.get('quick_buttons', [])
+                has_emergency_buttons = len(quick_buttons) > 0
+                
+                success = has_response and has_session_id and has_language
+                
+                self.log_test("Voice Chatbot Fallback", success, 
+                            f"Fallback response: {is_fallback}, Emergency buttons: {len(quick_buttons)}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Fallback", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Fallback", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_quick_buttons_structure(self):
+        """Test voice chatbot quick buttons structure and actions"""
+        print("\n🔍 Testing Voice Chatbot - Quick Buttons Structure...")
+        
+        chat_data = {
+            "message": "I want to report a theft incident",
+            "language_preference": "english",
+            "conversation_context": {"language": "english"},
+            "session_id": f"test_buttons_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                quick_buttons = data.get('quick_buttons', [])
+                
+                if not quick_buttons:
+                    self.log_test("Voice Chatbot Quick Buttons", False, "No quick buttons provided")
+                    return False
+                
+                # Check button structure
+                valid_buttons = 0
+                for button in quick_buttons:
+                    has_text = 'text' in button and len(button['text']) > 0
+                    has_action = 'action' in button and button['action'] in ['navigate', 'confirm_navigate', 'call', 'retry', 'select_language']
+                    
+                    if has_text and has_action:
+                        valid_buttons += 1
+                
+                # Check for app-aware actions
+                has_navigate_action = any(btn.get('action') in ['navigate', 'confirm_navigate'] for btn in quick_buttons)
+                has_value_field = any('value' in btn for btn in quick_buttons)
+                
+                success = valid_buttons == len(quick_buttons) and has_navigate_action
+                
+                self.log_test("Voice Chatbot Quick Buttons", success, 
+                            f"Valid buttons: {valid_buttons}/{len(quick_buttons)}, Navigate actions: {has_navigate_action}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Quick Buttons", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Quick Buttons", False, f"Status: {status}")
+            return False
+
+    def test_voice_chatbot_safety_tips(self):
+        """Test voice chatbot safety tips generation"""
+        print("\n🔍 Testing Voice Chatbot - Safety Tips Generation...")
+        
+        chat_data = {
+            "message": "What should I do to stay safe on campus?",
+            "language_preference": "english",
+            "conversation_context": {"language": "english"},
+            "session_id": f"test_safety_{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        response = self.make_request('POST', 'voice', chat_data)
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Check safety tip is provided
+                safety_tip = data.get('safety_tip', '')
+                has_safety_tip = len(safety_tip) > 0
+                
+                # Check safety tip format (should have emoji and helpful content)
+                has_emoji = any(char in safety_tip for char in ['💡', '🔒', '🗺️', '🚨', '💪'])
+                has_helpful_content = any(word in safety_tip.lower() for word in ['safe', 'security', 'emergency', 'contact', 'group'])
+                
+                # Check response also contains safety advice
+                response_text = data.get('response', '').lower()
+                response_has_safety = any(word in response_text for word in ['safe', 'security', 'careful', 'aware'])
+                
+                success = has_safety_tip and has_emoji and has_helpful_content
+                
+                self.log_test("Voice Chatbot Safety Tips", success, 
+                            f"Safety tip: {bool(safety_tip)}, Emoji: {has_emoji}, Helpful: {has_helpful_content}")
+                
+                return success
+                
+            except Exception as e:
+                self.log_test("Voice Chatbot Safety Tips", False, f"JSON error: {str(e)}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            self.log_test("Voice Chatbot Safety Tips", False, f"Status: {status}")
+            return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Campus Safety API Tests...")
