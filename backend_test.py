@@ -1401,6 +1401,341 @@ class CampusSafetyAPITester:
             self.log_test("Voice Chatbot Safety Tips", False, f"Status: {status}")
             return False
 
+    def test_voice_chatbot_general_conversation_no_buttons(self):
+        """Test that general conversations have NO action buttons"""
+        print("\n🔍 Testing Voice Chatbot - General Conversations (No Action Buttons)...")
+        
+        general_messages = [
+            "Hello, how are you?",
+            "Good morning",
+            "Thank you for your help",
+            "What's the weather like?",
+            "Nice to meet you",
+            "How's your day going?"
+        ]
+        
+        passed_tests = 0
+        total_tests = len(general_messages)
+        
+        for i, message in enumerate(general_messages):
+            chat_data = {
+                "message": message,
+                "language_preference": "english",
+                "conversation_context": {"language": "english"},
+                "session_id": f"test_general_{i}_{datetime.now().strftime('%H%M%S')}"
+            }
+            
+            response = self.make_request('POST', 'voice', chat_data)
+            
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    
+                    # Check that NO action buttons are provided for general conversation
+                    quick_buttons = data.get('quick_buttons', [])
+                    has_no_action_buttons = len(quick_buttons) == 0
+                    
+                    # Check intent is general
+                    intent_detected = data.get('intent_detected', '')
+                    is_general_intent = intent_detected == 'general'
+                    
+                    if has_no_action_buttons and is_general_intent:
+                        passed_tests += 1
+                        print(f"  ✅ '{message[:30]}...' - No action buttons (correct)")
+                    else:
+                        print(f"  ❌ '{message[:30]}...' - Has {len(quick_buttons)} buttons, intent: {intent_detected}")
+                        
+                except Exception as e:
+                    print(f"  ❌ '{message[:30]}...' - JSON error: {str(e)}")
+            else:
+                status = response.status_code if response else "No response"
+                print(f"  ❌ '{message[:30]}...' - Status: {status}")
+        
+        success = passed_tests == total_tests
+        self.log_test("Voice Chatbot General Conversations (No Buttons)", success, 
+                    f"Passed: {passed_tests}/{total_tests} general conversation tests")
+        
+        return success
+
+    def test_voice_chatbot_report_specific_buttons(self):
+        """Test that report-specific requests show [Report Incident] button"""
+        print("\n🔍 Testing Voice Chatbot - Report-Specific Requests (Report Button)...")
+        
+        report_messages = [
+            "I want to report an incident",
+            "Need to report something",
+            "File a report",
+            "I need to report a crime",
+            "How do I report an incident?"
+        ]
+        
+        passed_tests = 0
+        total_tests = len(report_messages)
+        
+        for i, message in enumerate(report_messages):
+            chat_data = {
+                "message": message,
+                "language_preference": "english",
+                "conversation_context": {"language": "english"},
+                "session_id": f"test_report_{i}_{datetime.now().strftime('%H%M%S')}"
+            }
+            
+            response = self.make_request('POST', 'voice', chat_data)
+            
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    
+                    # Check for Report Incident button
+                    quick_buttons = data.get('quick_buttons', [])
+                    has_report_button = any('report' in btn.get('text', '').lower() and 'incident' in btn.get('text', '').lower() 
+                                          for btn in quick_buttons)
+                    
+                    # Check intent is report_help
+                    intent_detected = data.get('intent_detected', '')
+                    is_report_intent = intent_detected == 'report_help'
+                    
+                    # Check button has correct action
+                    report_button_action = None
+                    for btn in quick_buttons:
+                        if 'report' in btn.get('text', '').lower() and 'incident' in btn.get('text', '').lower():
+                            report_button_action = btn.get('action', '')
+                            break
+                    
+                    has_correct_action = report_button_action == 'confirm_navigate'
+                    
+                    if has_report_button and is_report_intent and has_correct_action:
+                        passed_tests += 1
+                        print(f"  ✅ '{message[:30]}...' - Has Report Incident button")
+                    else:
+                        print(f"  ❌ '{message[:30]}...' - Report button: {has_report_button}, Intent: {intent_detected}, Action: {report_button_action}")
+                        
+                except Exception as e:
+                    print(f"  ❌ '{message[:30]}...' - JSON error: {str(e)}")
+            else:
+                status = response.status_code if response else "No response"
+                print(f"  ❌ '{message[:30]}...' - Status: {status}")
+        
+        success = passed_tests == total_tests
+        self.log_test("Voice Chatbot Report-Specific Requests", success, 
+                    f"Passed: {passed_tests}/{total_tests} report-specific tests")
+        
+        return success
+
+    def test_voice_chatbot_map_specific_buttons(self):
+        """Test that map-specific requests show [View Map] button"""
+        print("\n🔍 Testing Voice Chatbot - Map-Specific Requests (View Map Button)...")
+        
+        map_messages = [
+            "Show me the map",
+            "View map",
+            "Check the crime map",
+            "I want to see the map",
+            "Can you show me the crime locations?"
+        ]
+        
+        passed_tests = 0
+        total_tests = len(map_messages)
+        
+        for i, message in enumerate(map_messages):
+            chat_data = {
+                "message": message,
+                "language_preference": "english",
+                "conversation_context": {"language": "english"},
+                "session_id": f"test_map_{i}_{datetime.now().strftime('%H%M%S')}"
+            }
+            
+            response = self.make_request('POST', 'voice', chat_data)
+            
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    
+                    # Check for View Map button
+                    quick_buttons = data.get('quick_buttons', [])
+                    has_map_button = any('view' in btn.get('text', '').lower() and 'map' in btn.get('text', '').lower() 
+                                       for btn in quick_buttons)
+                    
+                    # Check intent is map_help
+                    intent_detected = data.get('intent_detected', '')
+                    is_map_intent = intent_detected == 'map_help'
+                    
+                    # Check button has correct action
+                    map_button_action = None
+                    for btn in quick_buttons:
+                        if 'map' in btn.get('text', '').lower():
+                            map_button_action = btn.get('action', '')
+                            break
+                    
+                    has_correct_action = map_button_action == 'confirm_navigate'
+                    
+                    if has_map_button and is_map_intent and has_correct_action:
+                        passed_tests += 1
+                        print(f"  ✅ '{message[:30]}...' - Has View Map button")
+                    else:
+                        print(f"  ❌ '{message[:30]}...' - Map button: {has_map_button}, Intent: {intent_detected}, Action: {map_button_action}")
+                        
+                except Exception as e:
+                    print(f"  ❌ '{message[:30]}...' - JSON error: {str(e)}")
+            else:
+                status = response.status_code if response else "No response"
+                print(f"  ❌ '{message[:30]}...' - Status: {status}")
+        
+        success = passed_tests == total_tests
+        self.log_test("Voice Chatbot Map-Specific Requests", success, 
+                    f"Passed: {passed_tests}/{total_tests} map-specific tests")
+        
+        return success
+
+    def test_voice_chatbot_sos_specific_buttons(self):
+        """Test that SOS/Help requests show [SOS/Helplines] button"""
+        print("\n🔍 Testing Voice Chatbot - SOS/Help Requests (SOS/Helplines Button)...")
+        
+        sos_messages = [
+            "I need helplines",
+            "SOS",
+            "Need emergency numbers",
+            "Show me emergency contacts",
+            "I need help numbers"
+        ]
+        
+        passed_tests = 0
+        total_tests = len(sos_messages)
+        
+        for i, message in enumerate(sos_messages):
+            chat_data = {
+                "message": message,
+                "language_preference": "english",
+                "conversation_context": {"language": "english"},
+                "session_id": f"test_sos_{i}_{datetime.now().strftime('%H%M%S')}"
+            }
+            
+            response = self.make_request('POST', 'voice', chat_data)
+            
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    
+                    # Check for SOS/Helplines button
+                    quick_buttons = data.get('quick_buttons', [])
+                    has_sos_button = any(('sos' in btn.get('text', '').lower() and 'helplines' in btn.get('text', '').lower()) or
+                                       'sos' in btn.get('text', '').lower() or 'helplines' in btn.get('text', '').lower()
+                                       for btn in quick_buttons)
+                    
+                    # Check intent is sos_help
+                    intent_detected = data.get('intent_detected', '')
+                    is_sos_intent = intent_detected == 'sos_help'
+                    
+                    # Check button has correct action
+                    sos_button_action = None
+                    for btn in quick_buttons:
+                        if 'sos' in btn.get('text', '').lower() or 'helplines' in btn.get('text', '').lower():
+                            sos_button_action = btn.get('action', '')
+                            break
+                    
+                    has_correct_action = sos_button_action == 'confirm_navigate'
+                    
+                    if has_sos_button and is_sos_intent and has_correct_action:
+                        passed_tests += 1
+                        print(f"  ✅ '{message[:30]}...' - Has SOS/Helplines button")
+                    else:
+                        print(f"  ❌ '{message[:30]}...' - SOS button: {has_sos_button}, Intent: {intent_detected}, Action: {sos_button_action}")
+                        
+                except Exception as e:
+                    print(f"  ❌ '{message[:30]}...' - JSON error: {str(e)}")
+            else:
+                status = response.status_code if response else "No response"
+                print(f"  ❌ '{message[:30]}...' - Status: {status}")
+        
+        success = passed_tests == total_tests
+        self.log_test("Voice Chatbot SOS/Help Requests", success, 
+                    f"Passed: {passed_tests}/{total_tests} SOS/help-specific tests")
+        
+        return success
+
+    def test_voice_chatbot_enhanced_intent_detection(self):
+        """Test enhanced intent detection logic comprehensively"""
+        print("\n🔍 Testing Voice Chatbot - Enhanced Intent Detection Logic...")
+        
+        test_cases = [
+            # General conversations - should have NO buttons
+            {"message": "Hello there", "expected_intent": "general", "expected_buttons": 0},
+            {"message": "How are you doing?", "expected_intent": "general", "expected_buttons": 0},
+            {"message": "Thanks for the help", "expected_intent": "general", "expected_buttons": 0},
+            
+            # Report-specific - should have Report button
+            {"message": "I want to report an incident", "expected_intent": "report_help", "expected_button_text": "report incident"},
+            {"message": "Need to file a report", "expected_intent": "report_help", "expected_button_text": "report incident"},
+            
+            # Map-specific - should have View Map button  
+            {"message": "Show me the crime map", "expected_intent": "map_help", "expected_button_text": "view map"},
+            {"message": "Check the map", "expected_intent": "map_help", "expected_button_text": "view map"},
+            
+            # SOS-specific - should have SOS/Helplines button
+            {"message": "I need helplines", "expected_intent": "sos_help", "expected_button_text": "sos"},
+            {"message": "SOS emergency numbers", "expected_intent": "sos_help", "expected_button_text": "sos"},
+        ]
+        
+        passed_tests = 0
+        total_tests = len(test_cases)
+        
+        for i, test_case in enumerate(test_cases):
+            chat_data = {
+                "message": test_case["message"],
+                "language_preference": "english",
+                "conversation_context": {"language": "english"},
+                "session_id": f"test_enhanced_{i}_{datetime.now().strftime('%H%M%S')}"
+            }
+            
+            response = self.make_request('POST', 'voice', chat_data)
+            
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    
+                    # Check intent detection
+                    intent_detected = data.get('intent_detected', '')
+                    intent_correct = intent_detected == test_case["expected_intent"]
+                    
+                    # Check button expectations
+                    quick_buttons = data.get('quick_buttons', [])
+                    
+                    if "expected_buttons" in test_case:
+                        # Test for specific number of buttons (usually 0 for general)
+                        buttons_correct = len(quick_buttons) == test_case["expected_buttons"]
+                        test_passed = intent_correct and buttons_correct
+                        
+                        if test_passed:
+                            passed_tests += 1
+                            print(f"  ✅ '{test_case['message'][:25]}...' - Intent: {intent_detected}, Buttons: {len(quick_buttons)}")
+                        else:
+                            print(f"  ❌ '{test_case['message'][:25]}...' - Expected intent: {test_case['expected_intent']}, got: {intent_detected}, Expected buttons: {test_case['expected_buttons']}, got: {len(quick_buttons)}")
+                    
+                    elif "expected_button_text" in test_case:
+                        # Test for specific button text
+                        expected_text = test_case["expected_button_text"].lower()
+                        has_expected_button = any(expected_text in btn.get('text', '').lower() for btn in quick_buttons)
+                        test_passed = intent_correct and has_expected_button
+                        
+                        if test_passed:
+                            passed_tests += 1
+                            print(f"  ✅ '{test_case['message'][:25]}...' - Intent: {intent_detected}, Has '{expected_text}' button")
+                        else:
+                            button_texts = [btn.get('text', '') for btn in quick_buttons]
+                            print(f"  ❌ '{test_case['message'][:25]}...' - Expected intent: {test_case['expected_intent']}, got: {intent_detected}, Expected button with '{expected_text}', got buttons: {button_texts}")
+                        
+                except Exception as e:
+                    print(f"  ❌ '{test_case['message'][:25]}...' - JSON error: {str(e)}")
+            else:
+                status = response.status_code if response else "No response"
+                print(f"  ❌ '{test_case['message'][:25]}...' - Status: {status}")
+        
+        success = passed_tests == total_tests
+        self.log_test("Voice Chatbot Enhanced Intent Detection", success, 
+                    f"Passed: {passed_tests}/{total_tests} enhanced intent detection tests")
+        
+        return success
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Campus Safety API Tests...")
