@@ -7,6 +7,7 @@ const VoiceChatbotWidget = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 24, y: 24 }); // Default bottom-left (24px from edges)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [widgetSize] = useState({ width: 64, height: 64 }); // 16 * 4 = 64px
   const [dragThreshold] = useState(5); // pixels to move before considering it a drag
   const [mouseDownPos, setMouseDownPos] = useState(null);
   
