@@ -799,7 +799,7 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
         # Analyze user message and create contextual prompt
         user_input = chat_message.message.lower()
         
-        # Intent detection logic
+        # Intent detection logic - enhanced for contextual action buttons
         intent = "general"
         if any(word in user_input for word in ["stolen", "theft", "robbed", "missing phone", "missing wallet"]):
             intent = "theft_report"
@@ -811,11 +811,14 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
             intent = "account_help"
         elif any(word in user_input for word in ["signin", "sign in", "login", "password", "forgot password"]):
             intent = "signin_help"
-        elif any(word in user_input for word in ["sos", "alert", "emergency contact"]):
+        # Enhanced SOS/helplines detection
+        elif any(phrase in user_input for phrase in ["sos", "help", "helpline", "helplines", "emergency contact", "emergency number", "emergency numbers", "need help", "urgent help"]):
             intent = "sos_help"
-        elif any(word in user_input for word in ["map", "crime map", "location", "area"]):
+        # Enhanced map detection  
+        elif any(phrase in user_input for phrase in ["map", "crime map", "show map", "view map", "check map", "location", "area", "where", "show me the map"]):
             intent = "map_help"
-        elif any(word in user_input for word in ["report", "reporting", "incident"]):
+        # Enhanced report detection
+        elif any(phrase in user_input for phrase in ["report", "reporting", "incident", "report incident", "want to report", "need to report", "file report"]):
             intent = "report_help"
         
         # Create contextual message for LLM
