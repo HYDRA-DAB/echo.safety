@@ -78,9 +78,23 @@ const VoiceChatbotWidget = () => {
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    updatePosition(e.clientX, e.clientY);
+    if (!mouseDownPos) return;
+    
+    const distance = Math.sqrt(
+      Math.pow(e.clientX - mouseDownPos.x, 2) + 
+      Math.pow(e.clientY - mouseDownPos.y, 2)
+    );
+    
+    // Only start dragging if moved beyond threshold
+    if (distance > dragThreshold && !isDragging) {
+      console.log('Starting drag due to movement');
+      startDrag(mouseDownPos.x, mouseDownPos.y);
+    }
+    
+    if (isDragging) {
+      e.preventDefault();
+      updatePosition(e.clientX, e.clientY);
+    }
   };
 
   const handleTouchMove = (e) => {
