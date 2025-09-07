@@ -455,7 +455,14 @@ const Dashboard = () => {
 
           <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
             <DialogTrigger asChild>
-              <Card className="feature-card p-6 cursor-pointer hover:neon-glow-pink">
+              <Card 
+                id="report-incident-section"
+                className={`feature-card p-6 cursor-pointer hover:neon-glow-pink ${
+                  highlightSection === 'report' || highlightSection === 'report-incident' 
+                    ? 'highlight-report' 
+                    : ''
+                }`}
+              >
                 <div className="flex items-center">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-white">Report Incident</h3>
