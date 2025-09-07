@@ -441,8 +441,15 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Link to="/map">
-            <Card className="feature-card p-6 cursor-pointer hover:neon-glow-red">
+          <Link to="/crime-map">
+            <Card 
+              id="map-section"
+              className={`feature-card p-6 cursor-pointer hover:neon-glow-red ${
+                highlightSection === 'map' 
+                  ? 'highlight-map' 
+                  : ''
+              }`}
+            >
               <div className="flex items-center">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-white">View Map</h3>
