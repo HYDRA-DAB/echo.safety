@@ -647,7 +647,15 @@ const Dashboard = () => {
             </DialogContent>
           </Dialog>
 
-          <Card className="feature-card p-6 cursor-pointer hover:neon-glow-blue" onClick={handleSOS}>
+          <Card 
+            id="sos-section"
+            className={`feature-card p-6 cursor-pointer hover:neon-glow-blue ${
+              highlightSection === 'sos' || highlightSection === 'helplines' 
+                ? 'highlight-sos' 
+                : ''
+            }`} 
+            onClick={handleSOS}
+          >
             <div className="flex items-center">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">SOS Emergency</h3>
