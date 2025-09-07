@@ -237,6 +237,8 @@ const VoiceChatbotModal = ({ isOpen, onClose, widgetPosition = { x: 24, y: 24 } 
             navigationUrl = '/dashboard?highlight=report';
           } else if (buttonText.includes('sos') || buttonText.includes('helpline') || buttonText.includes('emergency')) {
             navigationUrl = '/dashboard?highlight=sos';
+          } else if (buttonText.includes('map') || buttonText.includes('view map')) {
+            navigationUrl = '/dashboard?highlight=map';
           }
         }
         
