@@ -832,27 +832,34 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
         user_message = UserMessage(text=context_info)
         llm_response = await chat.send_message(user_message)
         
-        # Generate appropriate quick buttons based on intent
+        # Generate app-aware quick buttons based on intent
         quick_buttons = []
         safety_tip = None
         
         if intent == "theft_report":
             quick_buttons = [
-                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"},
-                {"text": "Call Campus Security", "action": "call", "value": "security"},
-                {"text": "View Crime Map", "action": "navigate", "value": "/crime-map"}
+                {"text": "Report Incident", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Open Report Incident page?"},
+                {"text": "View Map", "action": "confirm_navigate", "value": "/crime-map", "confirm_message": "Check crime locations on map?"},
+                {"text": "Call Security", "action": "call", "value": "security"}
             ]
         elif intent == "harassment_report":
             quick_buttons = [
-                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"},
-                {"text": "Call Emergency", "action": "call", "value": "emergency"},
-                {"text": "SOS Alert", "action": "sos", "value": "true"}
+                {"text": "Report Now", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Report this incident now?"},
+                {"text": "Emergency Call", "action": "call", "value": "emergency"},
+                {"text": "SOS Help", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Use SOS feature?"}
             ]
         elif intent == "emergency":
             quick_buttons = [
-                {"text": "Call Emergency (100)", "action": "call", "value": "emergency"},
-                {"text": "SOS Alert", "action": "sos", "value": "true"},
-                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"}
+                {"text": "Call 100", "action": "call", "value": "emergency"},
+                {"text": "SOS Alert", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Trigger SOS alert?"}
+            ]
+        elif intent == "map_help":
+            quick_buttons = [
+                {"text": "View Map", "action": "confirm_navigate", "value": "/crime-map", "confirm_message": "Open crime map?"}
+            ]
+        elif intent == "report_help":
+            quick_buttons = [
+                {"text": "Report Incident", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Open report form?"}
             ]
         elif intent == "account_help":
             quick_buttons = [
@@ -862,22 +869,13 @@ EMERGENCY: For serious situations: "Call police immediately at 100. I can't make
         elif intent == "signin_help":
             quick_buttons = [
                 {"text": "Sign In", "action": "navigate", "value": "/signin"},
-                {"text": "Forgot Password", "action": "navigate", "value": "/forgot-password"}
-            ]
-        elif intent == "map_help":
-            quick_buttons = [
-                {"text": "View Crime Map", "action": "navigate", "value": "/crime-map"}
-            ]
-        elif intent == "report_help":
-            quick_buttons = [
-                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"}
+                {"text": "Reset Password", "action": "navigate", "value": "/forgot-password"}
             ]
         else:
             # General help buttons
             quick_buttons = [
-                {"text": "Report Incident", "action": "navigate", "value": "/dashboard"},
-                {"text": "View Map", "action": "navigate", "value": "/crime-map"},
-                {"text": "Get Help", "action": "help", "value": "general"}
+                {"text": "Report Issue", "action": "confirm_navigate", "value": "/dashboard", "confirm_message": "Report an incident?"},
+                {"text": "View Map", "action": "confirm_navigate", "value": "/crime-map", "confirm_message": "Check safety map?"}
             ]
         
         # Generate safety tip based on language and context
