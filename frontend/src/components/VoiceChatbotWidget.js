@@ -86,7 +86,14 @@ const VoiceChatbotWidget = () => {
     
     // Only start dragging if moved beyond threshold
     if (distance > dragThreshold && !isDragging) {
-      startDrag(mouseDownPos.x, mouseDownPos.y);
+      // Calculate the offset when starting to drag
+      const rect = widgetRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: mouseDownPos.x - rect.left,
+        y: mouseDownPos.y - rect.top
+      });
+      setIsDragging(true);
+      isDraggingRef.current = true;
     }
     
     if (isDragging) {
