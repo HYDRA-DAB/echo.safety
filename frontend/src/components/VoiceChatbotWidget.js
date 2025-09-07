@@ -94,6 +94,7 @@ const VoiceChatbotWidget = () => {
       });
       setIsDragging(true);
       isDraggingRef.current = true;
+      console.log('Started dragging with offset:', {x: mouseDownPos.x - rect.left, y: mouseDownPos.y - rect.top});
     }
     
     if (isDragging) {
